@@ -790,18 +790,84 @@ function adjustColor(hex, amount){
 }
 
 function previewTheme(){
-  // Update hex labels
-  ['royal','royal-deep','gold','green'].forEach(function(k){
-    var inp = document.getElementById('tc-'+k);
-    var val = document.getElementById('tv-'+k);
-    if(inp && val) val.textContent = inp.value;
-  });
-  // Update range labels
-  document.getElementById('trv-card-name').textContent  = document.getElementById('tr-card-name').value  + 'px';
-  document.getElementById('trv-card-price').textContent = document.getElementById('tr-card-price').value + 'px';
-  document.getElementById('trv-radius').textContent     = document.getElementById('tr-radius').value     + 'px';
+  // ── Update display labels instantly ──
+  var royal     = document.getElementById('tc-royal').value;
+  var royalDeep = document.getElementById('tc-royal-deep').value;
+  var gold      = document.getElementById('tc-gold').value;
+  var green     = document.getElementById('tc-green').value;
+  var radius    = document.getElementById('tr-radius').value;
+  var nameFs    = document.getElementById('tr-card-name').value;
+  var priceFs   = document.getElementById('tr-card-price').value;
 
-  applyThemeToDOM(readThemeInputs());
+  // label updates
+  document.getElementById('tv-royal').textContent      = royal;
+  document.getElementById('tv-royal-deep').textContent = royalDeep;
+  document.getElementById('tv-gold').textContent       = gold;
+  document.getElementById('tv-green').textContent      = green;
+  document.getElementById('trv-radius').textContent     = radius     + 'px';
+  document.getElementById('trv-card-name').textContent  = nameFs     + 'px';
+  document.getElementById('trv-card-price').textContent = priceFs    + 'px';
+
+  // ── Apply CSS vars INSTANTLY (no DOM queries, no loops) ──
+  var rs = document.documentElement.style;
+  rs.setProperty('--royal',      royal);
+  rs.setProperty('--royal-deep', royalDeep);
+  rs.setProperty('--royal-mid',  adjustColor(royal, 20));
+  rs.setProperty('--gold',       gold);
+  rs.setProperty('--gold-light', adjustColor(gold, 30));
+  rs.setProperty('--green',      green);
+
+  // ── Card styles via a dynamic <style> tag (instant, no querySelectorAll loop) ──
+  var styleTag = document.getElementById('vk-live-theme');
+  if(!styleTag){
+    styleTag = document.createElement('style');
+    styleTag.id = 'vk-live-theme';
+    document.head.appendChild(styleTag);
+  }
+  styleTag.textContent =
+    '.card { border-radius: ' + radius + 'px !important; }' +
+    '.card-name { font-size: ' + nameFs + 'px !important; }' +
+    '.card-price { font-size: ' + priceFs + 'px !important; }';
+
+  // ── Text fields (only update changed elements, no full applyThemeToDOM) ──
+  var isAr = lang === 'ar';
+
+  var badgeAr = document.getElementById('ti-hero-badge-ar').value.trim();
+  var badgeEn = document.getElementById('ti-hero-badge-en').value.trim();
+  if(badgeAr || badgeEn){
+    var hEy = document.getElementById('h-eyebrow');
+    if(hEy) hEy.textContent = isAr ? (badgeAr||badgeEn) : (badgeEn||badgeAr);
+  }
+
+  var subAr = document.getElementById('ti-hero-sub-ar').value.trim();
+  var subEn = document.getElementById('ti-hero-sub-en').value.trim();
+  if(subAr || subEn){
+    var hSb = document.getElementById('h-sub');
+    if(hSb) hSb.textContent = isAr ? (subAr||subEn) : (subEn||subAr);
+  }
+
+  var ctaAr = document.getElementById('ti-hero-cta-ar').value.trim();
+  var ctaEn = document.getElementById('ti-hero-cta-en').value.trim();
+  if(ctaAr || ctaEn){
+    var hCt = document.getElementById('h-cta');
+    if(hCt) hCt.textContent = isAr ? (ctaAr||ctaEn) : (ctaEn||ctaAr);
+  }
+
+  var b1 = document.getElementById('ti-hero-brand1').value.trim();
+  var b2 = document.getElementById('ti-hero-brand2').value.trim();
+  if(b1 || b2){
+    var hT = document.querySelector('.hero-title');
+    if(hT) hT.innerHTML = (b1||'VINTA') + ' <em>' + (b2||'STORE') + '</em>';
+  }
+
+  var sn = document.getElementById('ti-store-name').value.trim();
+  if(sn){
+    document.querySelectorAll('.nav-logo, .footer-logo, .pw-logo').forEach(function(el){
+      el.textContent = sn;
+    });
+    var admLogo = document.querySelector('.adm-nav-logo');
+    if(admLogo) admLogo.textContent = sn + ' ADMIN';
+  }
 }
 
 function readThemeInputs(){
