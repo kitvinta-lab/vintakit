@@ -1,13 +1,43 @@
+// ─── FIREBASE ───
+var firebaseConfig = {
+  apiKey: "AIzaSyDzfC75-YNWr4XVCn2AVnIWshcdKZP-jAc",
+  authDomain: "vintakit-ca42b.firebaseapp.com",
+  projectId: "vintakit-ca42b",
+  storageBucket: "vintakit-ca42b.firebasestorage.app",
+  messagingSenderId: "483907194164",
+  appId: "1:483907194164:web:43e59d71360b23ef54e961",
+  measurementId: "G-FQW0LZTRVJ"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
 // ─── IMAGE HELPERS ───
 var pendingImgs = []; // base64 strings for new product
 var editImgs = [];    // base64 strings for edit
 var editingPid = null;
 
+// Reads a file, resizes it (max width 900px) and compresses it to JPEG
+// so uploaded photos stay small enough to store safely in Firestore.
 function fileToBase64(file){
   return new Promise(function(resolve){
-    var r = new FileReader();
-    r.onload = function(e){ resolve(e.target.result); };
-    r.readAsDataURL(file);
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var maxW = 900;
+        var scale = Math.min(1, maxW / img.width);
+        var w = Math.round(img.width * scale) || img.width;
+        var h = Math.round(img.height * scale) || img.height;
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.72));
+      };
+      img.onerror = function(){ resolve(e.target.result); };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
   });
 }
 
@@ -69,33 +99,38 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 // ─── STATE ───
+// Language stays a per-device preference (no need to sync across visitors).
 var lang = localStorage.getItem('vk-lang') || 'ar';
-var waNum = localStorage.getItem('vk-wa') || '212600000000';
-var aboutTexts = JSON.parse(localStorage.getItem('vk-about') || 'null') || {
+// waNum / aboutTexts / products now live in Firestore and are kept in sync
+// in real time by the listeners set up in the INIT section at the bottom
+// of this file. The values below are just placeholders shown until the
+// first Firestore snapshot arrives.
+var waNum = '212600000000';
+var aboutTexts = {
   ar: 'Vintakit هو متجر متخصص في قمصان المنتخبات الوطنية من حول العالم. نجمع بين الأصالة والأسلوب العصري لنقدم لك أفضل قمصان المنتخبات بجودة عالية وأسعار مناسبة.',
   en: 'Vintakit is a store specialized in national team jerseys from around the world. We combine authenticity with modern style to bring you the best jerseys at great prices.'
 };
-var products = JSON.parse(localStorage.getItem('vk-products') || 'null');
+var products = [];
 var currentFilter = 'all';
 var selectedSizes = {};
 var currentPid = null;
 var currentProdSize = null;
+var firstProductsLoad = true;
 
 // ─── DEFAULT PRODUCTS ───
-if (!products) {
-  products = [
-    {id:'p1',nar:'قميص المنتخب المغربي 2024',nen:'Morocco 2024 Home Jersey',car:'المغرب',cen:'Morocco',flag:'🇲🇦',price:450,region:'africa',imgs:['https://picsum.photos/seed/ma24a/600/450','https://picsum.photos/seed/ma24b/600/450','https://picsum.photos/seed/ma24c/600/450'],sizes:['S','M','L','XL','XXL'],soldOut:false},
-    {id:'p2',nar:'قميص المنتخب الجزائري',nen:'Algeria Home Jersey',car:'الجزائر',cen:'Algeria',flag:'🇩🇿',price:380,region:'africa',imgs:['https://picsum.photos/seed/dz24a/600/450','https://picsum.photos/seed/dz24b/600/450'],sizes:['M','L','XL'],soldOut:false},
-    {id:'p3',nar:'قميص السنغال 2024',nen:'Senegal 2024 Jersey',car:'السنغال',cen:'Senegal',flag:'🇸🇳',price:360,region:'africa',imgs:['https://picsum.photos/seed/sn24a/600/450'],sizes:['S','M','L','XL'],soldOut:false},
-    {id:'p4',nar:'قميص فرنسا المنزلي',nen:'France Home Jersey',car:'فرنسا',cen:'France',flag:'🇫🇷',price:490,region:'europe',imgs:['https://picsum.photos/seed/fr24a/600/450','https://picsum.photos/seed/fr24b/600/450'],sizes:['S','M','L','XL','XXL'],soldOut:false},
-    {id:'p5',nar:'قميص إسبانيا 2024',nen:'Spain 2024 Jersey',car:'إسبانيا',cen:'Spain',flag:'🇪🇸',price:470,region:'europe',imgs:['https://picsum.photos/seed/es24a/600/450'],sizes:['S','M','L'],soldOut:true},
-    {id:'p6',nar:'قميص البرتغال الخارجي',nen:'Portugal Away Jersey',car:'البرتغال',cen:'Portugal',flag:'🇵🇹',price:480,region:'europe',imgs:['https://picsum.photos/seed/pt24a/600/450','https://picsum.photos/seed/pt24b/600/450'],sizes:['M','L','XL','XXL'],soldOut:false},
-    {id:'p7',nar:'قميص البرازيل المنزلي',nen:'Brazil Home Jersey',car:'البرازيل',cen:'Brazil',flag:'🇧🇷',price:450,region:'america',imgs:['https://picsum.photos/seed/br24a/600/450','https://picsum.photos/seed/br24b/600/450'],sizes:['M','L','XL','XXL'],soldOut:false},
-    {id:'p8',nar:'قميص الأرجنتين 2024',nen:'Argentina 2024 Jersey',car:'الأرجنتين',cen:'Argentina',flag:'🇦🇷',price:510,region:'america',imgs:['https://picsum.photos/seed/ar24a/600/450'],sizes:['S','M','L','XL'],soldOut:false},
-    {id:'p9',nar:'قميص المنتخب الياباني',nen:'Japan National Jersey',car:'اليابان',cen:'Japan',flag:'🇯🇵',price:420,region:'asia',imgs:['https://picsum.photos/seed/jp24a/600/450','https://picsum.photos/seed/jp24b/600/450'],sizes:['S','M','L'],soldOut:false}
-  ];
-  save();
-}
+// Used only once, to seed Firestore the very first time the store runs
+// (if the "products" collection is still empty).
+var DEFAULT_PRODUCTS = [
+  {id:'p1',nar:'قميص المنتخب المغربي 2024',nen:'Morocco 2024 Home Jersey',car:'المغرب',cen:'Morocco',flag:'🇲🇦',price:450,region:'africa',imgs:['https://picsum.photos/seed/ma24a/600/450','https://picsum.photos/seed/ma24b/600/450','https://picsum.photos/seed/ma24c/600/450'],sizes:['S','M','L','XL','XXL'],soldOut:false},
+  {id:'p2',nar:'قميص المنتخب الجزائري',nen:'Algeria Home Jersey',car:'الجزائر',cen:'Algeria',flag:'🇩🇿',price:380,region:'africa',imgs:['https://picsum.photos/seed/dz24a/600/450','https://picsum.photos/seed/dz24b/600/450'],sizes:['M','L','XL'],soldOut:false},
+  {id:'p3',nar:'قميص السنغال 2024',nen:'Senegal 2024 Jersey',car:'السنغال',cen:'Senegal',flag:'🇸🇳',price:360,region:'africa',imgs:['https://picsum.photos/seed/sn24a/600/450'],sizes:['S','M','L','XL'],soldOut:false},
+  {id:'p4',nar:'قميص فرنسا المنزلي',nen:'France Home Jersey',car:'فرنسا',cen:'France',flag:'🇫🇷',price:490,region:'europe',imgs:['https://picsum.photos/seed/fr24a/600/450','https://picsum.photos/seed/fr24b/600/450'],sizes:['S','M','L','XL','XXL'],soldOut:false},
+  {id:'p5',nar:'قميص إسبانيا 2024',nen:'Spain 2024 Jersey',car:'إسبانيا',cen:'Spain',flag:'🇪🇸',price:470,region:'europe',imgs:['https://picsum.photos/seed/es24a/600/450'],sizes:['S','M','L'],soldOut:true},
+  {id:'p6',nar:'قميص البرتغال الخارجي',nen:'Portugal Away Jersey',car:'البرتغال',cen:'Portugal',flag:'🇵🇹',price:480,region:'europe',imgs:['https://picsum.photos/seed/pt24a/600/450','https://picsum.photos/seed/pt24b/600/450'],sizes:['M','L','XL','XXL'],soldOut:false},
+  {id:'p7',nar:'قميص البرازيل المنزلي',nen:'Brazil Home Jersey',car:'البرازيل',cen:'Brazil',flag:'🇧🇷',price:450,region:'america',imgs:['https://picsum.photos/seed/br24a/600/450','https://picsum.photos/seed/br24b/600/450'],sizes:['M','L','XL','XXL'],soldOut:false},
+  {id:'p8',nar:'قميص الأرجنتين 2024',nen:'Argentina 2024 Jersey',car:'الأرجنتين',cen:'Argentina',flag:'🇦🇷',price:510,region:'america',imgs:['https://picsum.photos/seed/ar24a/600/450'],sizes:['S','M','L','XL'],soldOut:false},
+  {id:'p9',nar:'قميص المنتخب الياباني',nen:'Japan National Jersey',car:'اليابان',cen:'Japan',flag:'🇯🇵',price:420,region:'asia',imgs:['https://picsum.photos/seed/jp24a/600/450','https://picsum.photos/seed/jp24b/600/450'],sizes:['S','M','L'],soldOut:false}
+];
 
 // ─── I18N ───
 var tx = {
@@ -160,7 +195,6 @@ var tx = {
 };
 
 function T(k){ return tx[lang][k] || ''; }
-function save(){ localStorage.setItem('vk-products', JSON.stringify(products)); }
 
 // ─── LANG ───
 function applyLang(){
@@ -438,13 +472,17 @@ function renderAdmList(){
 
 function toggleSold(pid){
   var p = products.find(function(x){ return x.id===pid; });
-  if(p){ p.soldOut = !p.soldOut; save(); updateStats(); renderAdmList(); renderGrid(); toast(T('tSaved')); }
+  if(!p) return;
+  db.collection('products').doc(pid).update({ soldOut: !p.soldOut })
+    .then(function(){ toast(T('tSaved')); })
+    .catch(function(err){ toast((lang==='ar'?'خطأ: ':'Error: ')+err.message); });
 }
 
 function delProd(pid){
   if(!confirm(lang==='ar'?'هل أنت متأكد من الحذف؟':'Are you sure?')) return;
-  products = products.filter(function(x){ return x.id!==pid; });
-  save(); updateStats(); renderAdmList(); renderGrid(); updateHeroStats(); toast(T('tDel'));
+  db.collection('products').doc(pid).delete()
+    .then(function(){ toast(T('tDel')); })
+    .catch(function(err){ toast((lang==='ar'?'خطأ: ':'Error: ')+err.message); });
 }
 
 function addProduct(){
@@ -458,12 +496,13 @@ function addProduct(){
   if(!nar||!nen||!car||!cen||!price){ toast(T('tFill')); return; }
   var seed = Date.now();
   var imgs = pendingImgs.length ? pendingImgs.slice() : ['https://picsum.photos/seed/'+seed+'a/600/450'];
-  products.push({id:'p'+seed,nar,nen,car,cen,flag,price,region,imgs,sizes:['S','M','L','XL','XXL'],soldOut:false});
-  save();
-  ['f-nar','f-nen','f-car','f-cen','f-flag','f-price'].forEach(function(id){ document.getElementById(id).value=''; });
-  pendingImgs = [];
-  document.getElementById('img-previews').innerHTML = '';
-  updateStats(); renderAdmList(); renderGrid(); updateHeroStats(); toast(T('tAdded'));
+  var newProduct = {id:'p'+seed,nar:nar,nen:nen,car:car,cen:cen,flag:flag,price:price,region:region,imgs:imgs,sizes:['S','M','L','XL','XXL'],soldOut:false};
+  db.collection('products').doc(newProduct.id).set(newProduct).then(function(){
+    ['f-nar','f-nen','f-car','f-cen','f-flag','f-price'].forEach(function(id){ document.getElementById(id).value=''; });
+    pendingImgs = [];
+    document.getElementById('img-previews').innerHTML = '';
+    toast(T('tAdded'));
+  }).catch(function(err){ toast((lang==='ar'?'خطأ: ':'Error: ')+err.message); });
 }
 
 // ─── EDIT PRODUCT ───
@@ -491,31 +530,36 @@ function closeEdit(){
 function saveEdit(){
   var p = products.find(function(x){ return x.id===editingPid; });
   if(!p) return;
-  p.nar = document.getElementById('e-nar').value.trim() || p.nar;
-  p.nen = document.getElementById('e-nen').value.trim() || p.nen;
-  p.car = document.getElementById('e-car').value.trim() || p.car;
-  p.cen = document.getElementById('e-cen').value.trim() || p.cen;
-  p.flag = document.getElementById('e-flag').value.trim() || p.flag;
-  p.price = parseInt(document.getElementById('e-price').value) || p.price;
-  p.region = document.getElementById('e-region').value;
-  if(editImgs.length) p.imgs = editImgs.slice();
-  save(); renderGrid(); renderAdmList();
-  if(currentPid === editingPid) renderProductPage(editingPid);
-  closeEdit(); toast(T('tSaved'));
+  var updated = {
+    nar: document.getElementById('e-nar').value.trim() || p.nar,
+    nen: document.getElementById('e-nen').value.trim() || p.nen,
+    car: document.getElementById('e-car').value.trim() || p.car,
+    cen: document.getElementById('e-cen').value.trim() || p.cen,
+    flag: document.getElementById('e-flag').value.trim() || p.flag,
+    price: parseInt(document.getElementById('e-price').value) || p.price,
+    region: document.getElementById('e-region').value
+  };
+  if(editImgs.length) updated.imgs = editImgs.slice();
+  var savingEditPid = editingPid;
+  db.collection('products').doc(savingEditPid).update(updated).then(function(){
+    if(currentPid === savingEditPid) renderProductPage(savingEditPid);
+    closeEdit(); toast(T('tSaved'));
+  }).catch(function(err){ toast((lang==='ar'?'خطأ: ':'Error: ')+err.message); });
 }
 
 function saveWa(){
-  waNum = document.getElementById('wa-inp').value.trim();
-  localStorage.setItem('vk-wa', waNum);
-  toast(T('tWa'));
+  var newWa = document.getElementById('wa-inp').value.trim();
+  db.collection('meta').doc('settings').set({ waNum: newWa }, { merge: true })
+    .then(function(){ toast(T('tWa')); })
+    .catch(function(err){ toast((lang==='ar'?'خطأ: ':'Error: ')+err.message); });
 }
 
 function saveAbout(){
-  aboutTexts.ar = document.getElementById('abt-ar').value.trim();
-  aboutTexts.en = document.getElementById('abt-en').value.trim();
-  localStorage.setItem('vk-about', JSON.stringify(aboutTexts));
-  document.getElementById('ab-text').textContent = aboutTexts[lang] || aboutTexts.ar;
-  toast(T('tAbout'));
+  var ar = document.getElementById('abt-ar').value.trim();
+  var en = document.getElementById('abt-en').value.trim();
+  db.collection('meta').doc('about').set({ ar: ar, en: en }, { merge: true })
+    .then(function(){ toast(T('tAbout')); })
+    .catch(function(err){ toast((lang==='ar'?'خطأ: ':'Error: ')+err.message); });
 }
 
 function copyLink(url){
@@ -534,13 +578,78 @@ function toast(msg){
   setTimeout(function(){ el.classList.remove('show'); }, 2400);
 }
 
-// ─── INIT: handle ?product=xxx deep link ───
-var urlParams = new URLSearchParams(window.location.search);
-var prodParam = urlParams.get('product');
-if(prodParam && products.find(function(p){ return p.id===prodParam; })){
-  currentPid = prodParam;
-  document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('active'); });
-  document.getElementById('page-product').classList.add('active');
+// ─── INIT ───
+// Seed Firestore with the default products the very first time the
+// store is opened (only runs if the "products" collection is empty).
+function seedIfEmpty(){
+  return db.collection('products').limit(1).get().then(function(snap){
+    if(snap.empty){
+      var batch = db.batch();
+      DEFAULT_PRODUCTS.forEach(function(p){
+        batch.set(db.collection('products').doc(p.id), p);
+      });
+      return batch.commit();
+    }
+  }).catch(function(err){
+    console.error('Firestore seed error:', err);
+  });
 }
 
-applyLang();
+function initApp(){
+  // Render the page shell immediately (with placeholder data) so the UI
+  // isn't blank while we wait for the network.
+  applyLang();
+
+  // Live products listener — fires immediately with cached/local data,
+  // then again whenever anything changes on any device.
+  db.collection('products').onSnapshot(function(snap){
+    products = snap.docs.map(function(d){ return d.data(); });
+    updateHeroStats();
+    renderGrid();
+    if(document.getElementById('admin-overlay').classList.contains('open')){
+      updateStats();
+      renderAdmList();
+    }
+    if(currentPid) renderProductPage(currentPid);
+
+    // Handle ?product=xxx deep link on first load only
+    if(firstProductsLoad){
+      firstProductsLoad = false;
+      var urlParams = new URLSearchParams(window.location.search);
+      var prodParam = urlParams.get('product');
+      if(prodParam && products.find(function(p){ return p.id===prodParam; })){
+        currentPid = prodParam;
+        document.querySelectorAll('.page').forEach(function(el){ el.classList.remove('active'); });
+        document.getElementById('page-product').classList.add('active');
+        renderProductPage(currentPid);
+      }
+    }
+  }, function(err){
+    console.error('Firestore products error:', err);
+    toast(lang==='ar' ? 'تعذر تحميل البيانات، تحقق من الاتصال' : 'Failed to load data, check your connection');
+  });
+
+  // Live WhatsApp number listener
+  db.collection('meta').doc('settings').onSnapshot(function(doc){
+    if(doc.exists){
+      waNum = doc.data().waNum || waNum;
+      var waInp = document.getElementById('wa-inp');
+      if(waInp) waInp.value = waNum;
+    }
+  });
+
+  // Live "About us" text listener
+  db.collection('meta').doc('about').onSnapshot(function(doc){
+    if(doc.exists){
+      var d = doc.data();
+      aboutTexts.ar = d.ar || aboutTexts.ar;
+      aboutTexts.en = d.en || aboutTexts.en;
+      var abText = document.getElementById('ab-text');
+      if(abText) abText.textContent = aboutTexts[lang] || aboutTexts.ar;
+      var abtAr = document.getElementById('abt-ar'); if(abtAr) abtAr.value = aboutTexts.ar;
+      var abtEn = document.getElementById('abt-en'); if(abtEn) abtEn.value = aboutTexts.en;
+    }
+  });
+}
+
+seedIfEmpty().then(initApp);
