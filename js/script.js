@@ -528,6 +528,9 @@ function showAdminPanel(){
   document.getElementById('wa-inp').value = waNum;
   document.getElementById('abt-ar').value = aboutTexts.ar || '';
   document.getElementById('abt-en').value = aboutTexts.en || '';
+  // populate theme inputs from saved theme
+  var saved = JSON.parse(localStorage.getItem('vk-theme') || 'null') || DEFAULT_THEME;
+  populateThemeInputs(saved);
   updateStats(); renderAdmList();
 }
 
@@ -679,6 +682,204 @@ function copyLink(url){
   });
 }
 
+// ─── THEME CUSTOMIZER ───
+var DEFAULT_THEME = {
+  royal:      '#1B3F8B',
+  royalDeep:  '#0D2359',
+  gold:       '#F2A500',
+  green:      '#1A9E60',
+  cardRadius: 14,
+  cardNameFs: 13,
+  cardPriceFs:17,
+  heroTitleAr:'',
+  heroTitleEn:'',
+  heroSubAr:  '',
+  heroSubEn:  '',
+  heroBadgeAr:'',
+  heroBadgeEn:'',
+  heroCtaAr:  '',
+  heroCtaEn:  '',
+  storeName:  '',
+  heroBrand1: '',
+  heroBrand2: ''
+};
+
+function loadTheme(){
+  var saved = JSON.parse(localStorage.getItem('vk-theme') || 'null');
+  var theme = Object.assign({}, DEFAULT_THEME, saved || {});
+  applyThemeToDOM(theme);
+  // sync Firestore if logged in
+  if(saved) return; // already applied from localStorage
+}
+
+function applyThemeToDOM(theme){
+  var r = document.documentElement.style;
+
+  // CSS vars
+  r.setProperty('--royal',      theme.royal);
+  r.setProperty('--royal-deep', theme.royalDeep);
+  r.setProperty('--royal-mid',  adjustColor(theme.royal, 20));
+  r.setProperty('--gold',       theme.gold);
+  r.setProperty('--gold-light', adjustColor(theme.gold, 30));
+  r.setProperty('--green',      theme.green);
+
+  // card radius
+  var cr = theme.cardRadius + 'px';
+  document.querySelectorAll('.card').forEach(function(el){ el.style.borderRadius = cr; });
+
+  // card name font size
+  document.querySelectorAll('.card-name').forEach(function(el){ el.style.fontSize = theme.cardNameFs + 'px'; });
+
+  // card price font size
+  document.querySelectorAll('.card-price').forEach(function(el){ el.style.fontSize = theme.cardPriceFs + 'px'; });
+
+  // texts — only override if set
+  var isAr = lang === 'ar';
+  if(theme.heroTitleAr || theme.heroTitleEn){
+    var ht = isAr ? (theme.heroTitleAr||theme.heroTitleEn) : (theme.heroTitleEn||theme.heroTitleAr);
+    // update i18n
+    if(theme.heroTitleAr) tx.ar.hSub = theme.heroSubAr || tx.ar.hSub;
+    if(theme.heroTitleEn) tx.en.hSub = theme.heroSubEn || tx.en.hSub;
+  }
+  if(theme.heroSubAr)   tx.ar.hSub      = theme.heroSubAr;
+  if(theme.heroSubEn)   tx.en.hSub      = theme.heroSubEn;
+  if(theme.heroBadgeAr) tx.ar.hEyebrow  = theme.heroBadgeAr;
+  if(theme.heroBadgeEn) tx.en.hEyebrow  = theme.heroBadgeEn;
+  if(theme.heroCtaAr)   tx.ar.hCta      = theme.heroCtaAr;
+  if(theme.heroCtaEn)   tx.en.hCta      = theme.heroCtaEn;
+  if(theme.heroTitleAr) tx.ar.navHome   = tx.ar.navHome; // keep
+
+  // hero brand words
+  var hb1 = theme.heroBrand1 || 'VINTA';
+  var hb2 = theme.heroBrand2 || 'STORE';
+  var heroTitle = document.querySelector('.hero-title');
+  if(heroTitle) heroTitle.innerHTML = hb1 + ' <em>' + hb2 + '</em>';
+
+  // store name (nav + footer)
+  var sn = theme.storeName;
+  if(sn){
+    document.querySelectorAll('.nav-logo, .footer-logo, .pw-logo, .adm-nav-logo').forEach(function(el){
+      if(el.classList.contains('adm-nav-logo')) el.textContent = sn + ' ADMIN';
+      else el.textContent = sn;
+    });
+  }
+
+  // hero sub / eyebrow / cta — live update
+  var hEyebrow = document.getElementById('h-eyebrow');
+  var hSub     = document.getElementById('h-sub');
+  var hCta     = document.getElementById('h-cta');
+  if(hEyebrow && (theme.heroBadgeAr || theme.heroBadgeEn)){
+    hEyebrow.textContent = isAr ? (theme.heroBadgeAr||theme.heroBadgeEn) : (theme.heroBadgeEn||theme.heroBadgeAr);
+  }
+  if(hSub && (theme.heroSubAr || theme.heroSubEn)){
+    hSub.textContent = isAr ? (theme.heroSubAr||theme.heroSubEn) : (theme.heroSubEn||theme.heroSubAr);
+  }
+  if(hCta && (theme.heroCtaAr || theme.heroCtaEn)){
+    hCta.textContent = isAr ? (theme.heroCtaAr||theme.heroCtaEn) : (theme.heroCtaEn||theme.heroCtaAr);
+  }
+}
+
+// Lighten/darken hex color by amount
+function adjustColor(hex, amount){
+  hex = hex.replace('#','');
+  if(hex.length === 3) hex = hex.split('').map(function(c){ return c+c; }).join('');
+  var r = Math.min(255, parseInt(hex.slice(0,2),16)+amount);
+  var g = Math.min(255, parseInt(hex.slice(2,4),16)+amount);
+  var b = Math.min(255, parseInt(hex.slice(4,6),16)+amount);
+  return '#'+[r,g,b].map(function(v){ return ('0'+v.toString(16)).slice(-2); }).join('');
+}
+
+function previewTheme(){
+  // Update hex labels
+  ['royal','royal-deep','gold','green'].forEach(function(k){
+    var inp = document.getElementById('tc-'+k);
+    var val = document.getElementById('tv-'+k);
+    if(inp && val) val.textContent = inp.value;
+  });
+  // Update range labels
+  document.getElementById('trv-card-name').textContent  = document.getElementById('tr-card-name').value  + 'px';
+  document.getElementById('trv-card-price').textContent = document.getElementById('tr-card-price').value + 'px';
+  document.getElementById('trv-radius').textContent     = document.getElementById('tr-radius').value     + 'px';
+
+  applyThemeToDOM(readThemeInputs());
+}
+
+function readThemeInputs(){
+  return {
+    royal:       document.getElementById('tc-royal').value,
+    royalDeep:   document.getElementById('tc-royal-deep').value,
+    gold:        document.getElementById('tc-gold').value,
+    green:       document.getElementById('tc-green').value,
+    cardRadius:  parseInt(document.getElementById('tr-radius').value),
+    cardNameFs:  parseInt(document.getElementById('tr-card-name').value),
+    cardPriceFs: parseInt(document.getElementById('tr-card-price').value),
+    heroTitleAr: document.getElementById('ti-hero-title-ar').value.trim(),
+    heroTitleEn: document.getElementById('ti-hero-title-en').value.trim(),
+    heroSubAr:   document.getElementById('ti-hero-sub-ar').value.trim(),
+    heroSubEn:   document.getElementById('ti-hero-sub-en').value.trim(),
+    heroBadgeAr: document.getElementById('ti-hero-badge-ar').value.trim(),
+    heroBadgeEn: document.getElementById('ti-hero-badge-en').value.trim(),
+    heroCtaAr:   document.getElementById('ti-hero-cta-ar').value.trim(),
+    heroCtaEn:   document.getElementById('ti-hero-cta-en').value.trim(),
+    storeName:   document.getElementById('ti-store-name').value.trim(),
+    heroBrand1:  document.getElementById('ti-hero-brand1').value.trim(),
+    heroBrand2:  document.getElementById('ti-hero-brand2').value.trim()
+  };
+}
+
+function populateThemeInputs(theme){
+  document.getElementById('tc-royal').value      = theme.royal      || DEFAULT_THEME.royal;
+  document.getElementById('tc-royal-deep').value = theme.royalDeep  || DEFAULT_THEME.royalDeep;
+  document.getElementById('tc-gold').value       = theme.gold       || DEFAULT_THEME.gold;
+  document.getElementById('tc-green').value      = theme.green      || DEFAULT_THEME.green;
+  document.getElementById('tr-radius').value     = theme.cardRadius  !== undefined ? theme.cardRadius  : DEFAULT_THEME.cardRadius;
+  document.getElementById('tr-card-name').value  = theme.cardNameFs  !== undefined ? theme.cardNameFs  : DEFAULT_THEME.cardNameFs;
+  document.getElementById('tr-card-price').value = theme.cardPriceFs !== undefined ? theme.cardPriceFs : DEFAULT_THEME.cardPriceFs;
+  document.getElementById('ti-hero-title-ar').value = theme.heroTitleAr || '';
+  document.getElementById('ti-hero-title-en').value = theme.heroTitleEn || '';
+  document.getElementById('ti-hero-sub-ar').value   = theme.heroSubAr   || '';
+  document.getElementById('ti-hero-sub-en').value   = theme.heroSubEn   || '';
+  document.getElementById('ti-hero-badge-ar').value = theme.heroBadgeAr || '';
+  document.getElementById('ti-hero-badge-en').value = theme.heroBadgeEn || '';
+  document.getElementById('ti-hero-cta-ar').value   = theme.heroCtaAr   || '';
+  document.getElementById('ti-hero-cta-en').value   = theme.heroCtaEn   || '';
+  document.getElementById('ti-store-name').value    = theme.storeName   || '';
+  document.getElementById('ti-hero-brand1').value   = theme.heroBrand1  || '';
+  document.getElementById('ti-hero-brand2').value   = theme.heroBrand2  || '';
+  // update labels
+  ['royal','royal-deep','gold','green'].forEach(function(k){
+    var inp = document.getElementById('tc-'+k);
+    var val = document.getElementById('tv-'+k);
+    if(inp && val) val.textContent = inp.value;
+  });
+  document.getElementById('trv-card-name').textContent  = document.getElementById('tr-card-name').value  + 'px';
+  document.getElementById('trv-card-price').textContent = document.getElementById('tr-card-price').value + 'px';
+  document.getElementById('trv-radius').textContent     = document.getElementById('tr-radius').value     + 'px';
+}
+
+function saveTheme(){
+  var theme = readThemeInputs();
+  localStorage.setItem('vk-theme', JSON.stringify(theme));
+  // also save to Firestore so all devices get it
+  if(db){
+    db.collection('meta').doc('theme').set(theme)
+      .then(function(){ toast(lang==='ar' ? 'تم حفظ التخصيصات ✓' : 'Theme saved ✓'); })
+      .catch(function(){ toast(lang==='ar' ? 'تم الحفظ محلياً ✓' : 'Saved locally ✓'); });
+  } else {
+    toast(lang==='ar' ? 'تم حفظ التخصيصات ✓' : 'Theme saved ✓');
+  }
+  applyThemeToDOM(theme);
+}
+
+function resetTheme(){
+  if(!confirm(lang==='ar' ? 'هل أنت متأكد من إعادة الضبط؟' : 'Reset to defaults?')) return;
+  localStorage.removeItem('vk-theme');
+  if(db) db.collection('meta').doc('theme').delete().catch(function(){});
+  populateThemeInputs(DEFAULT_THEME);
+  applyThemeToDOM(DEFAULT_THEME);
+  toast(lang==='ar' ? 'تم إعادة الضبط ✓' : 'Reset done ✓');
+}
+
 // ─── TOAST ───
 function toast(msg){
   var el = document.getElementById('toast');
@@ -704,6 +905,10 @@ function seedIfEmpty(){
 }
 
 function initApp(){
+  // Apply saved theme immediately (before network)
+  var savedTheme = JSON.parse(localStorage.getItem('vk-theme') || 'null');
+  if(savedTheme) applyThemeToDOM(savedTheme);
+
   // Render the page shell immediately (with placeholder data) so the UI
   // isn't blank while we wait for the network.
   applyLang();
@@ -743,6 +948,15 @@ function initApp(){
       waNum = doc.data().waNum || waNum;
       var waInp = document.getElementById('wa-inp');
       if(waInp) waInp.value = waNum;
+    }
+  });
+
+  // Live theme listener
+  db.collection('meta').doc('theme').onSnapshot(function(doc){
+    if(doc.exists){
+      var theme = Object.assign({}, DEFAULT_THEME, doc.data());
+      localStorage.setItem('vk-theme', JSON.stringify(theme));
+      applyThemeToDOM(theme);
     }
   });
 
