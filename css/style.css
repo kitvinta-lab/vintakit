@@ -210,7 +210,8 @@ button { cursor: pointer; font-family: 'Cairo', sans-serif; }
   margin-bottom: 56px;
 }
 .prod-main-img {
-  width: 100%; aspect-ratio: 4/3; object-fit: cover;
+  width: 100%; aspect-ratio: 4/3; object-fit: contain;
+  background: var(--off-white);
   border-radius: 14px; border: 1.5px solid var(--border);
   margin-bottom: 10px;
 }
