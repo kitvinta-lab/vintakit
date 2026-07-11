@@ -209,11 +209,20 @@ button { cursor: pointer; font-family: 'Cairo', sans-serif; }
   display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
   margin-bottom: 56px;
 }
+#prod-img-main {
+  overflow: hidden;
+  border-radius: 14px;
+  cursor: zoom-in;
+}
 .prod-main-img {
   width: 100%; aspect-ratio: 4/3; object-fit: contain;
   background: var(--off-white);
   border-radius: 14px; border: 1.5px solid var(--border);
   margin-bottom: 10px;
+  transition: transform .4s ease;
+}
+#prod-img-main:hover .prod-main-img {
+  transform: scale(1.18);
 }
 .prod-placeholder {
   width: 100%; aspect-ratio: 4/3; border-radius: 14px;
