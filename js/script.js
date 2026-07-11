@@ -10,6 +10,7 @@ var firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 var db = firebase.firestore();
+var auth = firebase.auth();
 
 // ─── IMAGE HELPERS ───
 var pendingImgs = []; // base64 strings for new product
@@ -423,25 +424,47 @@ function sendWa(p, size){
 // ─── ADMIN ───
 function openAdmin(){
   document.getElementById('admin-overlay').classList.add('open');
-  document.getElementById('pw-screen').style.display = 'flex';
-  document.getElementById('adm-panel').style.display = 'none';
   document.getElementById('pw-inp').value = '';
   document.getElementById('pw-err').textContent = '';
+  // If already signed in on this device, skip straight to the panel.
+  if(auth.currentUser){
+    showAdminPanel();
+  } else {
+    document.getElementById('pw-screen').style.display = 'flex';
+    document.getElementById('adm-panel').style.display = 'none';
+  }
 }
 
 function closeAdmin(){ document.getElementById('admin-overlay').classList.remove('open'); }
 
+function showAdminPanel(){
+  document.getElementById('pw-screen').style.display = 'none';
+  document.getElementById('adm-panel').style.display = 'block';
+  document.getElementById('wa-inp').value = waNum;
+  document.getElementById('abt-ar').value = aboutTexts.ar || '';
+  document.getElementById('abt-en').value = aboutTexts.en || '';
+  updateStats(); renderAdmList();
+}
+
 function checkPw(){
-  if(document.getElementById('pw-inp').value === 'vintakit2024'){
-    document.getElementById('pw-screen').style.display = 'none';
-    document.getElementById('adm-panel').style.display = 'block';
-    document.getElementById('wa-inp').value = waNum;
-    document.getElementById('abt-ar').value = aboutTexts.ar || '';
-    document.getElementById('abt-en').value = aboutTexts.en || '';
-    updateStats(); renderAdmList();
-  } else {
-    document.getElementById('pw-err').textContent = T('pwErr');
-  }
+  var email = document.getElementById('pw-email').value.trim();
+  var pass = document.getElementById('pw-inp').value;
+  var btn = document.getElementById('pw-btn');
+  var errEl = document.getElementById('pw-err');
+  errEl.textContent = '';
+  if(!email || !pass){ errEl.textContent = T('pwErr'); return; }
+  btn.disabled = true;
+  auth.signInWithEmailAndPassword(email, pass).then(function(){
+    btn.disabled = false;
+    showAdminPanel();
+  }).catch(function(){
+    btn.disabled = false;
+    errEl.textContent = T('pwErr');
+  });
+}
+
+function adminLogout(){
+  auth.signOut().then(function(){ closeAdmin(); });
 }
 
 function updateStats(){

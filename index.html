@@ -122,6 +122,9 @@
     <div class="pw-box">
       <div class="pw-logo">VINTAKIT</div>
       <div class="pw-sub" id="pw-sub">لوحة تحكم الأدمين</div>
+      <input class="pw-inp" type="email" id="pw-email" placeholder="you@example.com"
+             style="margin-bottom:10px"
+             onkeydown="if(event.key==='Enter')checkPw()">
       <input class="pw-inp" type="password" id="pw-inp" placeholder="••••••••"
              onkeydown="if(event.key==='Enter')checkPw()">
       <button class="pw-submit" id="pw-btn" onclick="checkPw()">دخول</button>
@@ -132,7 +135,10 @@
   <div class="adm-panel" id="adm-panel" style="display:none">
     <div class="adm-nav">
       <span class="adm-nav-logo">ADMIN PANEL</span>
-      <button class="adm-close" id="adm-close-btn" onclick="closeAdmin()">✕ إغلاق</button>
+      <div style="display:flex;gap:8px">
+        <button class="adm-close" style="background:rgba(217,48,48,.12);color:var(--red)" onclick="adminLogout()">🚪 خروج</button>
+        <button class="adm-close" id="adm-close-btn" onclick="closeAdmin()">✕ إغلاق</button>
+      </div>
     </div>
     <div class="adm-body">
 
@@ -233,6 +239,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="js/script.js"></script>
 </body>
 </html>
