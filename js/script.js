@@ -370,7 +370,7 @@ function renderProductPage(pid){
   szEl.innerHTML = p.sizes.map(function(s){
     return '<button class="prod-sz" onclick="pickProdSize(this,\''+s+'\')">'+s+'</button>';
   }).join('');
-  // init magnifier after DOM is ready
+  // init magnifier
   setTimeout(initMagnifier, 80);
 
   // suggestions: same region first, exclude current
@@ -406,59 +406,77 @@ function switchImg(src, thumb){
 function initMagnifier(){
   var container = document.getElementById('magnifier-container');
   if(!container) return;
-  var img = document.getElementById('main-img');
-  var lens = document.getElementById('magnifier-lens');
-  var zoom = document.getElementById('magnifier-zoom-box');
+  var img  = container.querySelector('#main-img');
+  var lens = container.querySelector('#magnifier-lens');
+  var zoom = container.querySelector('#magnifier-zoom-box');
   if(!img || !lens || !zoom) return;
 
-  var ZOOM = 2.8;
+  var ZOOM = 2.0;
 
   // clone to remove old listeners
-  var newContainer = container.cloneNode(true);
-  container.parentNode.replaceChild(newContainer, container);
-  var img2    = newContainer.querySelector('#main-img');
-  var lens2   = newContainer.querySelector('#magnifier-lens');
-  var zoom2   = newContainer.querySelector('#magnifier-zoom-box');
+  var newC = container.cloneNode(true);
+  container.parentNode.replaceChild(newC, container);
+  img  = newC.querySelector('#main-img');
+  lens = newC.querySelector('#magnifier-lens');
+  zoom = newC.querySelector('#magnifier-zoom-box');
 
   function updateBg(){
-    var src = img2.src;
-    var bw  = img2.offsetWidth  * ZOOM;
-    var bh  = img2.offsetHeight * ZOOM;
-    lens2.style.backgroundImage = 'url("'+src+'")';
-    lens2.style.backgroundSize  = bw+'px '+bh+'px';
-    zoom2.style.backgroundImage = 'url("'+src+'")';
-    zoom2.style.backgroundSize  = bw+'px '+bh+'px';
+    var src = img.src;
+    var bw  = img.offsetWidth  * ZOOM;
+    var bh  = img.offsetHeight * ZOOM;
+    lens.style.backgroundImage = 'url("'+src+'")';
+    lens.style.backgroundSize  = bw+'px '+bh+'px';
+    zoom.style.backgroundImage = 'url("'+src+'")';
+    zoom.style.backgroundSize  = bw+'px '+bh+'px';
   }
 
-  function move(e){
-    var rect    = img2.getBoundingClientRect();
-    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    var x = Math.max(0, Math.min(clientX - rect.left,  rect.width));
-    var y = Math.max(0, Math.min(clientY - rect.top,   rect.height));
+  function applyPosition(clientX, clientY){
+    var rect = img.getBoundingClientRect();
+    var x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    var y = Math.max(0, Math.min(clientY - rect.top,  rect.height));
 
-    lens2.style.left = x+'px';
-    lens2.style.top  = y+'px';
+    lens.style.left = x+'px';
+    lens.style.top  = y+'px';
 
-    var bx = x * ZOOM - lens2.offsetWidth  / 2;
-    var by = y * ZOOM - lens2.offsetHeight / 2;
-    lens2.style.backgroundPosition = '-'+bx+'px -'+by+'px';
+    var bx = x * ZOOM - lens.offsetWidth  / 2;
+    var by = y * ZOOM - lens.offsetHeight / 2;
+    lens.style.backgroundPosition = '-'+bx+'px -'+by+'px';
 
-    var zx = x * ZOOM - zoom2.offsetWidth  / 2;
-    var zy = y * ZOOM - zoom2.offsetHeight / 2;
-    zoom2.style.backgroundPosition = '-'+zx+'px -'+zy+'px';
+    var zx = x * ZOOM - zoom.offsetWidth  / 2;
+    var zy = y * ZOOM - zoom.offsetHeight / 2;
+    zoom.style.backgroundPosition = '-'+zx+'px -'+zy+'px';
   }
 
-  newContainer.addEventListener('mouseenter', function(){
+  // Mouse
+  newC.addEventListener('mouseenter', function(){
     updateBg();
-    lens2.style.display = 'block';
-    zoom2.style.display = 'block';
+    lens.style.display = 'block';
+    zoom.style.display = 'block';
   });
-  newContainer.addEventListener('mouseleave', function(){
-    lens2.style.display = 'none';
-    zoom2.style.display = 'none';
+  newC.addEventListener('mouseleave', function(){
+    lens.style.display = 'none';
+    zoom.style.display = 'none';
   });
-  newContainer.addEventListener('mousemove', move);
+  newC.addEventListener('mousemove', function(e){
+    applyPosition(e.clientX, e.clientY);
+  });
+
+  // Touch (mobile) - تتبع الإصبع بشكل صحيح
+  newC.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    updateBg();
+    lens.style.display = 'block';
+    applyPosition(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+
+  newC.addEventListener('touchmove', function(e){
+    e.preventDefault();
+    applyPosition(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+
+  newC.addEventListener('touchend', function(){
+    lens.style.display = 'none';
+  });
 }
 
 function pickProdSize(btn, sz){
