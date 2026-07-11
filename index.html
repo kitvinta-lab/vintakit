@@ -7,6 +7,35 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+
+<!-- ⚡ تطبيق التيم فوراً من localStorage — يمنع الوميض عند فتح الصفحة -->
+<script>
+(function(){
+  try {
+    var theme = JSON.parse(localStorage.getItem('vk-theme') || 'null');
+    if(!theme) return;
+    var r = document.documentElement.style;
+    function adj(hex, amt){
+      hex = hex.replace('#','');
+      var rv=Math.min(255,parseInt(hex.slice(0,2),16)+amt);
+      var gv=Math.min(255,parseInt(hex.slice(2,4),16)+amt);
+      var bv=Math.min(255,parseInt(hex.slice(4,6),16)+amt);
+      return '#'+[rv,gv,bv].map(function(v){return ('0'+v.toString(16)).slice(-2)}).join('');
+    }
+    if(theme.royal)     { r.setProperty('--royal', theme.royal); r.setProperty('--royal-mid', adj(theme.royal,20)); }
+    if(theme.royalDeep)   r.setProperty('--royal-deep', theme.royalDeep);
+    if(theme.gold)      { r.setProperty('--gold', theme.gold); r.setProperty('--gold-light', adj(theme.gold,30)); }
+    if(theme.green)       r.setProperty('--green', theme.green);
+    var s = document.createElement('style');
+    s.id = 'vk-live-theme';
+    s.textContent =
+      '.card{border-radius:'+(theme.cardRadius!==undefined?theme.cardRadius:14)+'px!important}'+
+      '.card-name{font-size:'+(theme.cardNameFs!==undefined?theme.cardNameFs:13)+'px!important}'+
+      '.card-price{font-size:'+(theme.cardPriceFs!==undefined?theme.cardPriceFs:17)+'px!important}';
+    document.head.appendChild(s);
+  } catch(e){}
+})();
+</script>
 </head>
 <body>
 
