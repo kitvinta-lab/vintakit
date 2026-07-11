@@ -354,7 +354,11 @@ function renderProductPage(pid){
   var imgs = (p.imgs && p.imgs.length) ? p.imgs : [];
   var mainWrap = document.getElementById('prod-img-main');
   mainWrap.innerHTML = imgs[0]
-    ? '<img class="prod-main-img" id="main-img" src="'+imgs[0]+'" alt="'+name+'">'
+    ? '<div class="magnifier-container" id="magnifier-container">'
+      + '<img class="prod-main-img" id="main-img" src="'+imgs[0]+'" alt="'+name+'">'
+      + '<div class="magnifier-lens" id="magnifier-lens"></div>'
+      + '<div class="magnifier-zoom-box" id="magnifier-zoom-box"></div>'
+      + '</div>'
     : '<div class="prod-placeholder">👕</div>';
   var thumbsEl = document.getElementById('prod-thumbs');
   thumbsEl.innerHTML = imgs.length > 1 ? imgs.map(function(img, i){
@@ -366,6 +370,9 @@ function renderProductPage(pid){
   szEl.innerHTML = p.sizes.map(function(s){
     return '<button class="prod-sz" onclick="pickProdSize(this,\''+s+'\')">'+s+'</button>';
   }).join('');
+  // init magnifier after DOM is ready
+  setTimeout(initMagnifier, 80);
+
   // suggestions: same region first, exclude current
   var sugg = products.filter(function(x){ return x.id!==pid && x.region===p.region; });
   if(sugg.length < 4) sugg = sugg.concat(products.filter(function(x){ return x.id!==pid && x.region!==p.region; }));
@@ -392,6 +399,66 @@ function switchImg(src, thumb){
   if(main) main.src = src;
   document.querySelectorAll('.prod-thumb').forEach(function(t){ t.classList.remove('active'); });
   thumb.classList.add('active');
+  setTimeout(initMagnifier, 50);
+}
+
+// ─── MAGNIFIER ───
+function initMagnifier(){
+  var container = document.getElementById('magnifier-container');
+  if(!container) return;
+  var img = document.getElementById('main-img');
+  var lens = document.getElementById('magnifier-lens');
+  var zoom = document.getElementById('magnifier-zoom-box');
+  if(!img || !lens || !zoom) return;
+
+  var ZOOM = 2.8;
+
+  // clone to remove old listeners
+  var newContainer = container.cloneNode(true);
+  container.parentNode.replaceChild(newContainer, container);
+  var img2    = newContainer.querySelector('#main-img');
+  var lens2   = newContainer.querySelector('#magnifier-lens');
+  var zoom2   = newContainer.querySelector('#magnifier-zoom-box');
+
+  function updateBg(){
+    var src = img2.src;
+    var bw  = img2.offsetWidth  * ZOOM;
+    var bh  = img2.offsetHeight * ZOOM;
+    lens2.style.backgroundImage = 'url("'+src+'")';
+    lens2.style.backgroundSize  = bw+'px '+bh+'px';
+    zoom2.style.backgroundImage = 'url("'+src+'")';
+    zoom2.style.backgroundSize  = bw+'px '+bh+'px';
+  }
+
+  function move(e){
+    var rect    = img2.getBoundingClientRect();
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    var x = Math.max(0, Math.min(clientX - rect.left,  rect.width));
+    var y = Math.max(0, Math.min(clientY - rect.top,   rect.height));
+
+    lens2.style.left = x+'px';
+    lens2.style.top  = y+'px';
+
+    var bx = x * ZOOM - lens2.offsetWidth  / 2;
+    var by = y * ZOOM - lens2.offsetHeight / 2;
+    lens2.style.backgroundPosition = '-'+bx+'px -'+by+'px';
+
+    var zx = x * ZOOM - zoom2.offsetWidth  / 2;
+    var zy = y * ZOOM - zoom2.offsetHeight / 2;
+    zoom2.style.backgroundPosition = '-'+zx+'px -'+zy+'px';
+  }
+
+  newContainer.addEventListener('mouseenter', function(){
+    updateBg();
+    lens2.style.display = 'block';
+    zoom2.style.display = 'block';
+  });
+  newContainer.addEventListener('mouseleave', function(){
+    lens2.style.display = 'none';
+    zoom2.style.display = 'none';
+  });
+  newContainer.addEventListener('mousemove', move);
 }
 
 function pickProdSize(btn, sz){
