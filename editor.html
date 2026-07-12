@@ -874,58 +874,69 @@ function handleHeroBg(input){
 function applyHeroBg(src){
   if(!src) return;
   currentTheme.heroBg = src;
-  try{
-    var hero = fd().querySelector('.hero');
-    if(hero){
-      hero.style.backgroundImage = 'url("'+src+'")';
-      var zoom = document.getElementById('h-bg-zoom').value || 100;
-      var x = document.getElementById('h-bg-posx').value || 50;
-      var y = document.getElementById('h-bg-posy').value || 50;
-      hero.style.backgroundSize = zoom + '%';
-      hero.style.backgroundPosition = x + '% ' + y + '%';
-    }
-  }catch(e){}
+  updateHeroBgLive();
 }
 
 // ── HERO BG ZOOM / POSITION / OVERLAY ──
+// Overlay is combined into the same background-image as a gradient layer
+// (not a separate <div>), so it never gets hidden by stacking-context
+// quirks — matches exactly what applyThemeToDOM() does on the real site.
 function liveHeroZoom(val){
   document.getElementById('h-bg-zoom-val').textContent = val + '%';
-  try{ fd().querySelector('.hero').style.backgroundSize = val + '%'; }catch(e){}
+  updateHeroBgLive();
 }
 function liveHeroPos(){
   var x = document.getElementById('h-bg-posx').value;
   var y = document.getElementById('h-bg-posy').value;
   document.getElementById('h-bg-posx-val').textContent = x + '%';
   document.getElementById('h-bg-posy-val').textContent = y + '%';
-  try{ fd().querySelector('.hero').style.backgroundPosition = x + '% ' + y + '%'; }catch(e){}
+  updateHeroBgLive();
 }
 function liveHeroOverlay(){
-  var on = document.getElementById('h-bg-overlay-on').checked;
-  var color = document.getElementById('h-bg-overlay-color').value;
   var opacity = document.getElementById('h-bg-overlay-opacity').value;
   document.getElementById('h-bg-overlay-opacity-val').textContent = opacity + '%';
-  try{
-    var doc2 = fd();
-    var hero = doc2.querySelector('.hero');
-    var overlay = doc2.getElementById('vk-hero-overlay');
-    if(on){
-      if(!overlay){
-        overlay = doc2.createElement('div');
-        overlay.id = 'vk-hero-overlay';
-        overlay.style.cssText = 'position:absolute;inset:0;z-index:-1;pointer-events:none;';
-        hero.insertBefore(overlay, hero.firstChild);
-      }
-      overlay.style.background = hexToRgba(color, opacity/100);
-    } else if(overlay){
-      overlay.remove();
-    }
-  }catch(e){}
+  updateHeroBgLive();
 }
 function hexToRgba(hex, alpha){
   hex = hex.replace('#','');
   if(hex.length === 3) hex = hex.split('').map(function(c){ return c+c; }).join('');
   var r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
   return 'rgba('+r+','+g+','+b+','+alpha+')';
+}
+function updateHeroBgLive(){
+  try{
+    var hero = fd().querySelector('.hero');
+    if(!hero) return;
+    var oldOverlay = fd().getElementById('vk-hero-overlay');
+    if(oldOverlay) oldOverlay.remove();
+
+    var overlayOn = document.getElementById('h-bg-overlay-on').checked;
+    var overlayColor = document.getElementById('h-bg-overlay-color').value;
+    var overlayOpacity = document.getElementById('h-bg-overlay-opacity').value;
+    var zoom = document.getElementById('h-bg-zoom').value || 100;
+    var x = document.getElementById('h-bg-posx').value || 50;
+    var y = document.getElementById('h-bg-posy').value || 50;
+
+    var layers = [], sizes = [], positions = [];
+    if(overlayOn){
+      var rgba = hexToRgba(overlayColor, overlayOpacity/100);
+      layers.push('linear-gradient('+rgba+','+rgba+')');
+      sizes.push('cover');
+      positions.push('center');
+    }
+    if(currentTheme.heroBg){
+      layers.push('url("'+currentTheme.heroBg+'")');
+      sizes.push(zoom+'%');
+      positions.push(x+'% '+y+'%');
+    }
+    if(layers.length){
+      hero.style.backgroundImage = layers.join(', ');
+      hero.style.backgroundSize = sizes.join(', ');
+      hero.style.backgroundPosition = positions.join(', ');
+    } else {
+      hero.style.backgroundImage = '';
+    }
+  }catch(e){}
 }
 
 // ── ABOUT IMG ──
@@ -1165,20 +1176,20 @@ function loadSavedTheme(){
   if(saved.heroBgZoom)  { document.getElementById('h-bg-zoom').value=saved.heroBgZoom; document.getElementById('h-bg-zoom-val').textContent=saved.heroBgZoom+'%'; }
   if(saved.heroBgPosX!==undefined){ document.getElementById('h-bg-posx').value=saved.heroBgPosX; document.getElementById('h-bg-posx-val').textContent=saved.heroBgPosX+'%'; }
   if(saved.heroBgPosY!==undefined){ document.getElementById('h-bg-posy').value=saved.heroBgPosY; document.getElementById('h-bg-posy-val').textContent=saved.heroBgPosY+'%'; }
-  if(saved.heroBg)      applyHeroBg(saved.heroBg);
   if(saved.heroOverlayOn!==undefined){
     document.getElementById('h-bg-overlay-on').checked = saved.heroOverlayOn;
-    if(saved.heroOverlayColor){
-      document.getElementById('h-bg-overlay-color').value = saved.heroOverlayColor;
-      document.getElementById('sw-h-overlay').style.background = saved.heroOverlayColor;
-      document.getElementById('ch-h-overlay').textContent = saved.heroOverlayColor;
-    }
-    if(saved.heroOverlayOpacity!==undefined){
-      document.getElementById('h-bg-overlay-opacity').value = saved.heroOverlayOpacity;
-      document.getElementById('h-bg-overlay-opacity-val').textContent = saved.heroOverlayOpacity+'%';
-    }
-    liveHeroOverlay();
   }
+  if(saved.heroOverlayColor){
+    document.getElementById('h-bg-overlay-color').value = saved.heroOverlayColor;
+    document.getElementById('sw-h-overlay').style.background = saved.heroOverlayColor;
+    document.getElementById('ch-h-overlay').textContent = saved.heroOverlayColor;
+  }
+  if(saved.heroOverlayOpacity!==undefined){
+    document.getElementById('h-bg-overlay-opacity').value = saved.heroOverlayOpacity;
+    document.getElementById('h-bg-overlay-opacity-val').textContent = saved.heroOverlayOpacity+'%';
+  }
+  if(saved.heroBg) currentTheme.heroBg = saved.heroBg;
+  updateHeroBgLive();
 }
 
 function resetAll(){

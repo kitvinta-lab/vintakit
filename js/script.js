@@ -825,27 +825,36 @@ function applyThemeToDOM(theme){
   }
 
   // hero background image — zoom, position & darkening overlay
+  // (overlay is combined into the SAME background-image as a gradient
+  // layer, not a separate div, so it always renders correctly beneath
+  // the hero content — a stacked <div> with z-index would fight the
+  // .hero stacking context and end up hidden behind the image).
   var heroEl = document.querySelector('.hero');
   if(heroEl){
+    var layers = [], sizes = [], positions = [];
+    if(theme.heroOverlayOn){
+      var rgba = hexToRgba(theme.heroOverlayColor || '#0D2359', (theme.heroOverlayOpacity!==undefined?theme.heroOverlayOpacity:40)/100);
+      layers.push('linear-gradient('+rgba+','+rgba+')');
+      sizes.push('cover');
+      positions.push('center');
+    }
     if(theme.heroBg){
-      heroEl.style.backgroundImage = 'url("'+theme.heroBg+'")';
-      heroEl.style.backgroundSize = (theme.heroBgZoom || 100) + '%';
       var px = theme.heroBgPosX !== undefined ? theme.heroBgPosX : 50;
       var py = theme.heroBgPosY !== undefined ? theme.heroBgPosY : 50;
-      heroEl.style.backgroundPosition = px + '% ' + py + '%';
+      layers.push('url("'+theme.heroBg+'")');
+      sizes.push((theme.heroBgZoom || 100) + '%');
+      positions.push(px + '% ' + py + '%');
     }
-    var overlay = document.getElementById('vk-hero-overlay');
-    if(theme.heroOverlayOn){
-      if(!overlay){
-        overlay = document.createElement('div');
-        overlay.id = 'vk-hero-overlay';
-        overlay.style.cssText = 'position:absolute;inset:0;z-index:-1;pointer-events:none;';
-        heroEl.insertBefore(overlay, heroEl.firstChild);
-      }
-      overlay.style.background = hexToRgba(theme.heroOverlayColor || '#0D2359', (theme.heroOverlayOpacity!==undefined?theme.heroOverlayOpacity:40)/100);
-    } else if(overlay){
-      overlay.remove();
+    if(layers.length){
+      heroEl.style.backgroundImage = layers.join(', ');
+      heroEl.style.backgroundSize = sizes.join(', ');
+      heroEl.style.backgroundPosition = positions.join(', ');
+    } else {
+      heroEl.style.backgroundImage = '';
     }
+    // clean up any leftover overlay <div> from the older implementation
+    var oldOverlay = document.getElementById('vk-hero-overlay');
+    if(oldOverlay) oldOverlay.remove();
   }
 }
 
