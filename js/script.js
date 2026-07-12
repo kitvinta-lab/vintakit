@@ -1068,10 +1068,6 @@ function seedIfEmpty(){
 }
 
 function initApp(){
-  // Apply saved theme immediately (before network)
-  var savedTheme = JSON.parse(localStorage.getItem('vk-theme') || 'null');
-  if(savedTheme) applyThemeToDOM(savedTheme);
-
   // Render the page shell immediately (with placeholder data) so the UI
   // isn't blank while we wait for the network.
   applyLang();
@@ -1147,5 +1143,16 @@ function initApp(){
     }
   });
 }
+
+// Apply any saved theme INSTANTLY and synchronously, the moment this
+// script runs — do not wait for seedIfEmpty()/Firestore, which involves
+// a network round-trip and is what was causing a 1-2s flash of the
+// default colors/hero on first visit before the saved theme kicked in.
+(function applyThemeInstantly(){
+  try{
+    var saved = JSON.parse(localStorage.getItem('vk-theme') || 'null');
+    if(saved) applyThemeToDOM(Object.assign({}, DEFAULT_THEME, saved));
+  }catch(e){}
+})();
 
 seedIfEmpty().then(initApp);
