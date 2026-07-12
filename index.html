@@ -37,13 +37,9 @@
     </div>
   </div>
 
-  <div class="filters" id="shop-anchor">
-    <button class="filter-btn active" onclick="setFilter('all',this)" id="f-all">الكل</button>
-    <button class="filter-btn" onclick="setFilter('africa',this)" id="f-africa">إفريقيا</button>
-    <button class="filter-btn" onclick="setFilter('europe',this)" id="f-europe">أوروبا</button>
-    <button class="filter-btn" onclick="setFilter('america',this)" id="f-america">أمريكا</button>
-    <button class="filter-btn" onclick="setFilter('asia',this)" id="f-asia">آسيا</button>
-  </div>
+  <div class="filters" id="shop-anchor"></div>
+  <!-- filter buttons are rendered dynamically by renderFilters() in script.js,
+       driven by the "categories" Firestore collection (fully editable). -->
 
   <div class="grid-section">
     <div class="grid" id="main-grid"></div>
@@ -178,12 +174,8 @@
           <input type="text" id="f-cen" placeholder="Country (English) *">
           <input type="text" id="f-flag" placeholder="علم 🇲🇦 (emoji) *">
           <input type="number" id="f-price" placeholder="السعر (درهم) *">
-          <select id="f-region" class="full">
-            <option value="africa">إفريقيا / Africa</option>
-            <option value="europe">أوروبا / Europe</option>
-            <option value="america">أمريكا / America</option>
-            <option value="asia">آسيا / Asia</option>
-          </select>
+          <select id="f-region" class="full"></select>
+          <!-- options rendered dynamically by renderRegionOptions() in script.js -->
           <div class="full img-upload-area" id="upload-area">
             <div class="upload-label" id="upload-label">📸 اضغط أو اسحب لرفع الصور (حتى 3 صور)</div>
             <input type="file" id="f-imgs" accept="image/*" multiple style="display:none" onchange="handleImgUpload(this)">
@@ -217,12 +209,8 @@
       <input type="text" id="e-cen" placeholder="Country English">
       <input type="text" id="e-flag" placeholder="علم 🇲🇦">
       <input type="number" id="e-price" placeholder="السعر (درهم)">
-      <select id="e-region" class="full">
-        <option value="africa">إفريقيا / Africa</option>
-        <option value="europe">أوروبا / Europe</option>
-        <option value="america">أمريكا / America</option>
-        <option value="asia">آسيا / Asia</option>
-      </select>
+      <select id="e-region" class="full"></select>
+      <!-- options rendered dynamically by renderRegionOptions() in script.js -->
       <div class="edit-img-area full" onclick="document.getElementById('e-imgs').click()">
         <div style="color:var(--text-mid);font-size:13px;font-weight:600" id="edit-upload-lbl">📸 اضغط لتغيير الصور (حتى 3)</div>
         <input type="file" id="e-imgs" accept="image/*" multiple style="display:none" onchange="handleEditImgUpload(this)">

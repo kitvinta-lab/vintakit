@@ -112,6 +112,7 @@ var aboutTexts = {
   en: 'Vintakit is a store specialized in national team jerseys from around the world. We combine authenticity with modern style to bring you the best jerseys at great prices.'
 };
 var products = [];
+var categories = [];
 var currentFilter = 'all';
 var selectedSizes = {};
 var currentPid = null;
@@ -131,6 +132,16 @@ var DEFAULT_PRODUCTS = [
   {id:'p7',nar:'قميص البرازيل المنزلي',nen:'Brazil Home Jersey',car:'البرازيل',cen:'Brazil',flag:'🇧🇷',price:450,region:'america',imgs:['https://picsum.photos/seed/br24a/600/450','https://picsum.photos/seed/br24b/600/450'],sizes:['M','L','XL','XXL'],soldOut:false},
   {id:'p8',nar:'قميص الأرجنتين 2024',nen:'Argentina 2024 Jersey',car:'الأرجنتين',cen:'Argentina',flag:'🇦🇷',price:510,region:'america',imgs:['https://picsum.photos/seed/ar24a/600/450'],sizes:['S','M','L','XL'],soldOut:false},
   {id:'p9',nar:'قميص المنتخب الياباني',nen:'Japan National Jersey',car:'اليابان',cen:'Japan',flag:'🇯🇵',price:420,region:'asia',imgs:['https://picsum.photos/seed/jp24a/600/450','https://picsum.photos/seed/jp24b/600/450'],sizes:['S','M','L'],soldOut:false}
+];
+
+// ─── DEFAULT CATEGORIES ───
+// Used only once, to seed Firestore the very first time the store runs
+// (if the "categories" collection is still empty).
+var DEFAULT_CATEGORIES = [
+  {id:'africa',  ar:'إفريقيا', en:'Africa',  order:0},
+  {id:'europe',  ar:'أوروبا',  en:'Europe',  order:1},
+  {id:'america', ar:'أمريكا',  en:'America', order:2},
+  {id:'asia',    ar:'آسيا',    en:'Asia',    order:3}
 ];
 
 // ─── I18N ───
@@ -212,12 +223,8 @@ function applyLang(){
   document.getElementById('hs-lbl1').textContent = T('hs1');
   document.getElementById('hs-lbl2').textContent = T('hs2');
   document.getElementById('hs-lbl3').textContent = T('hs3');
-  // filters
-  document.getElementById('f-all').textContent = T('fAll');
-  document.getElementById('f-africa').textContent = T('fAfrica');
-  document.getElementById('f-europe').textContent = T('fEurope');
-  document.getElementById('f-america').textContent = T('fAmerica');
-  document.getElementById('f-asia').textContent = T('fAsia');
+  // filters (categories are dynamic — rebuilt with the correct language)
+  renderFilters();
   // footer
   ['ft-home','ft-prod'].forEach(function(id){ var el=document.getElementById(id); if(el) el.textContent=T('footer'); });
   // product page
@@ -289,6 +296,37 @@ function setFilter(f, btn){
   document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   renderGrid();
+}
+
+// ─── CATEGORIES (dynamic filters + region options) ───
+// Categories are fully editable at runtime (add/rename/reorder/delete)
+// via the visual editor, and live-synced through Firestore.
+function sortedCategories(){
+  return categories.slice().sort(function(a,b){ return (a.order||0) - (b.order||0); });
+}
+
+function renderFilters(){
+  var wrap = document.getElementById('shop-anchor');
+  if(!wrap) return;
+  var allBtn = '<button class="filter-btn'+(currentFilter==='all'?' active':'')+'" onclick="setFilter(\'all\',this)" id="f-all">'+T('fAll')+'</button>';
+  var catBtns = sortedCategories().map(function(c){
+    var label = lang==='ar' ? c.ar : c.en;
+    return '<button class="filter-btn'+(currentFilter===c.id?' active':'')+'" onclick="setFilter(\''+c.id+'\',this)" id="f-'+c.id+'">'+label+'</button>';
+  }).join('');
+  wrap.innerHTML = allBtn + catBtns;
+}
+
+function renderRegionOptions(){
+  var opts = sortedCategories().map(function(c){
+    return '<option value="'+c.id+'">'+c.ar+' / '+c.en+'</option>';
+  }).join('');
+  ['f-region','e-region'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    var cur = el.value;
+    el.innerHTML = opts;
+    if(cur) el.value = cur;
+  });
 }
 
 function renderGrid(){
@@ -528,6 +566,7 @@ function showAdminPanel(){
   document.getElementById('wa-inp').value = waNum;
   document.getElementById('abt-ar').value = aboutTexts.ar || '';
   document.getElementById('abt-en').value = aboutTexts.en || '';
+  renderRegionOptions();
   // populate theme inputs from saved theme
   var saved = JSON.parse(localStorage.getItem('vk-theme') || 'null') || DEFAULT_THEME;
   populateThemeInputs(saved);
@@ -701,7 +740,14 @@ var DEFAULT_THEME = {
   heroCtaEn:  '',
   storeName:  '',
   heroBrand1: '',
-  heroBrand2: ''
+  heroBrand2: '',
+  heroBg:            '',
+  heroBgZoom:         100,
+  heroBgPosX:         50,
+  heroBgPosY:         50,
+  heroOverlayOn:      false,
+  heroOverlayColor:  '#0D2359',
+  heroOverlayOpacity: 40
 };
 
 function loadTheme(){
@@ -777,6 +823,38 @@ function applyThemeToDOM(theme){
   if(hCta && (theme.heroCtaAr || theme.heroCtaEn)){
     hCta.textContent = isAr ? (theme.heroCtaAr||theme.heroCtaEn) : (theme.heroCtaEn||theme.heroCtaAr);
   }
+
+  // hero background image — zoom, position & darkening overlay
+  var heroEl = document.querySelector('.hero');
+  if(heroEl){
+    if(theme.heroBg){
+      heroEl.style.backgroundImage = 'url("'+theme.heroBg+'")';
+      heroEl.style.backgroundSize = (theme.heroBgZoom || 100) + '%';
+      var px = theme.heroBgPosX !== undefined ? theme.heroBgPosX : 50;
+      var py = theme.heroBgPosY !== undefined ? theme.heroBgPosY : 50;
+      heroEl.style.backgroundPosition = px + '% ' + py + '%';
+    }
+    var overlay = document.getElementById('vk-hero-overlay');
+    if(theme.heroOverlayOn){
+      if(!overlay){
+        overlay = document.createElement('div');
+        overlay.id = 'vk-hero-overlay';
+        overlay.style.cssText = 'position:absolute;inset:0;z-index:-1;pointer-events:none;';
+        heroEl.insertBefore(overlay, heroEl.firstChild);
+      }
+      overlay.style.background = hexToRgba(theme.heroOverlayColor || '#0D2359', (theme.heroOverlayOpacity!==undefined?theme.heroOverlayOpacity:40)/100);
+    } else if(overlay){
+      overlay.remove();
+    }
+  }
+}
+
+// Convert a hex color + alpha (0-1) into an rgba() string
+function hexToRgba(hex, alpha){
+  hex = hex.replace('#','');
+  if(hex.length === 3) hex = hex.split('').map(function(c){ return c+c; }).join('');
+  var r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+  return 'rgba('+r+','+g+','+b+','+alpha+')';
 }
 
 // Lighten/darken hex color by amount
@@ -957,7 +1035,7 @@ function toast(msg){
 // Seed Firestore with the default products the very first time the
 // store is opened (only runs if the "products" collection is empty).
 function seedIfEmpty(){
-  return db.collection('products').limit(1).get().then(function(snap){
+  var seedProducts = db.collection('products').limit(1).get().then(function(snap){
     if(snap.empty){
       var batch = db.batch();
       DEFAULT_PRODUCTS.forEach(function(p){
@@ -965,7 +1043,17 @@ function seedIfEmpty(){
       });
       return batch.commit();
     }
-  }).catch(function(err){
+  });
+  var seedCategories = db.collection('categories').limit(1).get().then(function(snap){
+    if(snap.empty){
+      var batch = db.batch();
+      DEFAULT_CATEGORIES.forEach(function(c){
+        batch.set(db.collection('categories').doc(c.id), c);
+      });
+      return batch.commit();
+    }
+  });
+  return Promise.all([seedProducts, seedCategories]).catch(function(err){
     console.error('Firestore seed error:', err);
   });
 }
@@ -1006,6 +1094,17 @@ function initApp(){
   }, function(err){
     console.error('Firestore products error:', err);
     toast(lang==='ar' ? 'تعذر تحميل البيانات، تحقق من الاتصال' : 'Failed to load data, check your connection');
+  });
+
+  // Live categories listener — powers the home filters and the
+  // region <select> in the admin add/edit forms. Editable from the
+  // visual editor (add/rename/reorder/delete), synced in real time.
+  db.collection('categories').orderBy('order').onSnapshot(function(snap){
+    categories = snap.docs.map(function(d){ return d.data(); });
+    renderFilters();
+    renderRegionOptions();
+  }, function(err){
+    console.error('Firestore categories error:', err);
   });
 
   // Live WhatsApp number listener

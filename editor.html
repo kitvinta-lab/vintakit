@@ -217,6 +217,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif}
     <button class="tab-btn" onclick="switchTab('navbar')" id="tb-navbar">🧭 النافبار</button>
     <button class="tab-btn" onclick="switchTab('hero')" id="tb-hero">🖼 الهيرو</button>
     <button class="tab-btn" onclick="switchTab('cards')" id="tb-cards">📦 البطاقات</button>
+    <button class="tab-btn" onclick="switchTab('categories')" id="tb-categories">🏷 التصنيفات</button>
     <button class="tab-btn" onclick="switchTab('sections')" id="tb-sections">📢 أقسام</button>
     <button class="tab-btn" onclick="switchTab('footer')" id="tb-footer">📄 الفوتر</button>
     <button class="tab-btn" onclick="switchTab('about')" id="tb-about">👤 من نحن</button>
@@ -422,6 +423,52 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif}
         <input type="text" id="h-bg-url" placeholder="https://..." oninput="applyHeroBg(this.value)">
       </div>
 
+      <div class="sec-lbl">تكبير وتموقع الصورة</div>
+      <div class="field">
+        <label class="field-label">التكبير / التصغير (Zoom)</label>
+        <div class="range-wrap">
+          <input type="range" id="h-bg-zoom" min="100" max="200" value="100" oninput="liveHeroZoom(this.value)">
+          <span class="range-val" id="h-bg-zoom-val">100%</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">الموضع الأفقي</label>
+          <div class="range-wrap">
+            <input type="range" id="h-bg-posx" min="0" max="100" value="50" oninput="liveHeroPos()">
+            <span class="range-val" id="h-bg-posx-val">50%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">الموضع العمودي</label>
+          <div class="range-wrap">
+            <input type="range" id="h-bg-posy" min="0" max="100" value="50" oninput="liveHeroPos()">
+            <span class="range-val" id="h-bg-posy-val">50%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-lbl">تعتيم الصورة (Overlay)</div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">تفعيل طبقة التعتيم</span>
+        <label class="toggle"><input type="checkbox" id="h-bg-overlay-on" onchange="liveHeroOverlay()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="field">
+        <label class="field-label">لون التعتيم</label>
+        <div class="color-field" onclick="this.querySelector('input').click()">
+          <div class="color-swatch" id="sw-h-overlay" style="background:#0D2359"></div>
+          <input type="color" id="h-bg-overlay-color" value="#0D2359" oninput="document.getElementById('sw-h-overlay').style.background=this.value;document.getElementById('ch-h-overlay').textContent=this.value;liveHeroOverlay()">
+          <div class="color-hex" id="ch-h-overlay">#0D2359</div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">شدة التعتيم</label>
+        <div class="range-wrap">
+          <input type="range" id="h-bg-overlay-opacity" min="0" max="100" value="40" oninput="liveHeroOverlay()">
+          <span class="range-val" id="h-bg-overlay-opacity-val">40%</span>
+        </div>
+      </div>
+
       <div class="sec-lbl">المظهر</div>
       <div class="field">
         <label class="field-label">ارتفاع الهيرو</label>
@@ -497,6 +544,26 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif}
           <span class="range-val">20px</span>
         </div>
       </div>
+    </div>
+
+    <!-- ══ CATEGORIES ══ -->
+    <div class="tab-content" id="tab-categories">
+      <div class="sec-lbl">التصنيفات الحالية</div>
+      <div style="font-size:11px;color:var(--text-light);margin:-4px 0 12px">اسحب الترتيب بالأسهم، عدّل الاسم مباشرة، أو احذف تصنيفاً. التغييرات تنعكس فوراً على المتجر.</div>
+      <div id="categories-list">
+        <div style="font-size:12px;color:var(--text-light);padding:8px 0">جارٍ التحميل...</div>
+      </div>
+
+      <div class="sec-lbl">إضافة تصنيف جديد</div>
+      <div class="field">
+        <label class="field-label">الاسم (عربي)</label>
+        <input type="text" id="cat-new-ar" placeholder="مثال: أوقيانوسيا">
+      </div>
+      <div class="field">
+        <label class="field-label">الاسم (English)</label>
+        <input type="text" id="cat-new-en" placeholder="e.g. Oceania">
+      </div>
+      <button class="add-card-btn" onclick="addCategoryFromEditor()">+ إضافة تصنيف</button>
     </div>
 
     <!-- ══ SECTIONS ══ -->
@@ -806,14 +873,59 @@ function handleHeroBg(input){
 }
 function applyHeroBg(src){
   if(!src) return;
+  currentTheme.heroBg = src;
   try{
     var hero = fd().querySelector('.hero');
     if(hero){
       hero.style.backgroundImage = 'url("'+src+'")';
-      hero.style.backgroundSize = 'cover';
-      hero.style.backgroundPosition = 'center';
+      var zoom = document.getElementById('h-bg-zoom').value || 100;
+      var x = document.getElementById('h-bg-posx').value || 50;
+      var y = document.getElementById('h-bg-posy').value || 50;
+      hero.style.backgroundSize = zoom + '%';
+      hero.style.backgroundPosition = x + '% ' + y + '%';
     }
   }catch(e){}
+}
+
+// ── HERO BG ZOOM / POSITION / OVERLAY ──
+function liveHeroZoom(val){
+  document.getElementById('h-bg-zoom-val').textContent = val + '%';
+  try{ fd().querySelector('.hero').style.backgroundSize = val + '%'; }catch(e){}
+}
+function liveHeroPos(){
+  var x = document.getElementById('h-bg-posx').value;
+  var y = document.getElementById('h-bg-posy').value;
+  document.getElementById('h-bg-posx-val').textContent = x + '%';
+  document.getElementById('h-bg-posy-val').textContent = y + '%';
+  try{ fd().querySelector('.hero').style.backgroundPosition = x + '% ' + y + '%'; }catch(e){}
+}
+function liveHeroOverlay(){
+  var on = document.getElementById('h-bg-overlay-on').checked;
+  var color = document.getElementById('h-bg-overlay-color').value;
+  var opacity = document.getElementById('h-bg-overlay-opacity').value;
+  document.getElementById('h-bg-overlay-opacity-val').textContent = opacity + '%';
+  try{
+    var doc2 = fd();
+    var hero = doc2.querySelector('.hero');
+    var overlay = doc2.getElementById('vk-hero-overlay');
+    if(on){
+      if(!overlay){
+        overlay = doc2.createElement('div');
+        overlay.id = 'vk-hero-overlay';
+        overlay.style.cssText = 'position:absolute;inset:0;z-index:-1;pointer-events:none;';
+        hero.insertBefore(overlay, hero.firstChild);
+      }
+      overlay.style.background = hexToRgba(color, opacity/100);
+    } else if(overlay){
+      overlay.remove();
+    }
+  }catch(e){}
+}
+function hexToRgba(hex, alpha){
+  hex = hex.replace('#','');
+  if(hex.length === 3) hex = hex.split('').map(function(c){ return c+c; }).join('');
+  var r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+  return 'rgba('+r+','+g+','+b+','+alpha+')';
 }
 
 // ── ABOUT IMG ──
@@ -993,6 +1105,12 @@ function collectTheme(){
     heroSubAr:   document.getElementById('h-sub-ar').value,
     heroCtaAr:   document.getElementById('h-cta-ar').value,
     heroBg:      currentTheme.heroBg || '',
+    heroBgZoom:  parseInt(document.getElementById('h-bg-zoom').value)||100,
+    heroBgPosX:  parseInt(document.getElementById('h-bg-posx').value)||50,
+    heroBgPosY:  parseInt(document.getElementById('h-bg-posy').value)||50,
+    heroOverlayOn:      document.getElementById('h-bg-overlay-on').checked,
+    heroOverlayColor:   document.getElementById('h-bg-overlay-color').value,
+    heroOverlayOpacity: parseInt(document.getElementById('h-bg-overlay-opacity').value)||40,
     footerCopyAr:document.getElementById('ft-copy-ar').value,
     aboutTitleAr:document.getElementById('ab-title-ar').value,
     aboutSubAr:  document.getElementById('ab-sub-ar').value,
@@ -1044,7 +1162,23 @@ function loadSavedTheme(){
   if(saved.bannerOn)    { document.getElementById('banner-section').style.display='block'; updateBanner(); }
   if(saved.featuredOn)  { document.getElementById('featured-section').style.display='block'; updateFeatured(); }
   if(saved.promoOn)     { document.getElementById('promo-section').style.display='block'; updatePromo(); }
+  if(saved.heroBgZoom)  { document.getElementById('h-bg-zoom').value=saved.heroBgZoom; document.getElementById('h-bg-zoom-val').textContent=saved.heroBgZoom+'%'; }
+  if(saved.heroBgPosX!==undefined){ document.getElementById('h-bg-posx').value=saved.heroBgPosX; document.getElementById('h-bg-posx-val').textContent=saved.heroBgPosX+'%'; }
+  if(saved.heroBgPosY!==undefined){ document.getElementById('h-bg-posy').value=saved.heroBgPosY; document.getElementById('h-bg-posy-val').textContent=saved.heroBgPosY+'%'; }
   if(saved.heroBg)      applyHeroBg(saved.heroBg);
+  if(saved.heroOverlayOn!==undefined){
+    document.getElementById('h-bg-overlay-on').checked = saved.heroOverlayOn;
+    if(saved.heroOverlayColor){
+      document.getElementById('h-bg-overlay-color').value = saved.heroOverlayColor;
+      document.getElementById('sw-h-overlay').style.background = saved.heroOverlayColor;
+      document.getElementById('ch-h-overlay').textContent = saved.heroOverlayColor;
+    }
+    if(saved.heroOverlayOpacity!==undefined){
+      document.getElementById('h-bg-overlay-opacity').value = saved.heroOverlayOpacity;
+      document.getElementById('h-bg-overlay-opacity-val').textContent = saved.heroOverlayOpacity+'%';
+    }
+    liveHeroOverlay();
+  }
 }
 
 function resetAll(){
@@ -1064,6 +1198,90 @@ function toast(msg){
 
 // Load saved theme when iframe is ready
 frame.addEventListener('load', loadSavedTheme);
+
+// ── CATEGORIES MANAGEMENT ──
+// Talks directly to the same Firestore "categories" collection the store
+// reads from (js/script.js), so changes here sync live to the real site.
+var editorCategories = [];
+
+function loadCategoriesEditor(){
+  if(typeof db === 'undefined' || !db) return;
+  db.collection('categories').orderBy('order').onSnapshot(function(snap){
+    editorCategories = snap.docs.map(function(d){ return d.data(); });
+    renderCategoriesEditor();
+  }, function(err){ console.error('categories listener error:', err); });
+}
+
+function escapeAttr(s){
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderCategoriesEditor(){
+  var wrap = document.getElementById('categories-list');
+  if(!wrap) return;
+  if(!editorCategories.length){
+    wrap.innerHTML = '<div style="font-size:12px;color:var(--text-light);padding:8px 0">لا توجد تصنيفات بعد، أضيفي واحداً بالأسفل</div>';
+    return;
+  }
+  wrap.innerHTML = editorCategories.map(function(c, i){
+    return '<div class="banner-card" style="padding:10px;margin-bottom:8px">'
+      + '<div class="field-row" style="margin-bottom:8px">'
+        + '<div class="field"><input type="text" value="'+escapeAttr(c.ar)+'" placeholder="عربي" onchange="renameCategory(\''+c.id+'\',\'ar\',this.value)"></div>'
+        + '<div class="field"><input type="text" value="'+escapeAttr(c.en)+'" placeholder="English" onchange="renameCategory(\''+c.id+'\',\'en\',this.value)"></div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;justify-content:flex-end">'
+        + (i>0 ? '<button class="sec-vis-btn" onclick="moveCategory(\''+c.id+'\',-1)" title="أعلى">▲</button>' : '')
+        + (i<editorCategories.length-1 ? '<button class="sec-vis-btn" onclick="moveCategory(\''+c.id+'\',1)" title="أسفل">▼</button>' : '')
+        + '<button class="del-card-btn" onclick="deleteCategoryFromEditor(\''+c.id+'\')">حذف</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+function renameCategory(id, field, val){
+  val = (val||'').trim();
+  if(!val){ toast('الاسم لا يمكن أن يكون فارغاً'); renderCategoriesEditor(); return; }
+  var data = {}; data[field] = val;
+  db.collection('categories').doc(id).update(data)
+    .then(function(){ toast('تم التحديث ✓'); })
+    .catch(function(err){ toast('خطأ: '+err.message); });
+}
+
+function moveCategory(id, dir){
+  var idx = editorCategories.findIndex(function(c){ return c.id===id; });
+  var swapIdx = idx + dir;
+  if(idx===-1 || swapIdx<0 || swapIdx>=editorCategories.length) return;
+  var a = editorCategories[idx], b = editorCategories[swapIdx];
+  var batch = db.batch();
+  batch.update(db.collection('categories').doc(a.id), {order: b.order});
+  batch.update(db.collection('categories').doc(b.id), {order: a.order});
+  batch.commit()
+    .then(function(){ toast('تم إعادة الترتيب ✓'); })
+    .catch(function(err){ toast('خطأ: '+err.message); });
+}
+
+function deleteCategoryFromEditor(id){
+  if(!confirm('حذف هذا التصنيف؟ المنتجات المرتبطة به لن تُحذف، لكنها ستظهر فقط في تبويب "الكل".')) return;
+  db.collection('categories').doc(id).delete()
+    .then(function(){ toast('تم الحذف ✓'); })
+    .catch(function(err){ toast('خطأ: '+err.message); });
+}
+
+function addCategoryFromEditor(){
+  var ar = document.getElementById('cat-new-ar').value.trim();
+  var en = document.getElementById('cat-new-en').value.trim();
+  if(!ar || !en){ toast('الرجاء ملء الاسمين'); return; }
+  var id = 'cat' + Date.now();
+  var maxOrder = editorCategories.reduce(function(m,c){ return Math.max(m, c.order||0); }, -1);
+  db.collection('categories').doc(id).set({id:id, ar:ar, en:en, order:maxOrder+1})
+    .then(function(){
+      document.getElementById('cat-new-ar').value = '';
+      document.getElementById('cat-new-en').value = '';
+      toast('تمت الإضافة ✓');
+    })
+    .catch(function(err){ toast('خطأ: '+err.message); });
+}
+
+loadCategoriesEditor();
 </script>
 </body>
 </html>
