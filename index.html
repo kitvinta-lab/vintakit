@@ -7,35 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
-
-<!-- ⚡ تطبيق التيم فوراً من localStorage — يمنع الوميض عند فتح الصفحة -->
-<script>
-(function(){
-  try {
-    var theme = JSON.parse(localStorage.getItem('vk-theme') || 'null');
-    if(!theme) return;
-    var r = document.documentElement.style;
-    function adj(hex, amt){
-      hex = hex.replace('#','');
-      var rv=Math.min(255,parseInt(hex.slice(0,2),16)+amt);
-      var gv=Math.min(255,parseInt(hex.slice(2,4),16)+amt);
-      var bv=Math.min(255,parseInt(hex.slice(4,6),16)+amt);
-      return '#'+[rv,gv,bv].map(function(v){return ('0'+v.toString(16)).slice(-2)}).join('');
-    }
-    if(theme.royal)     { r.setProperty('--royal', theme.royal); r.setProperty('--royal-mid', adj(theme.royal,20)); }
-    if(theme.royalDeep)   r.setProperty('--royal-deep', theme.royalDeep);
-    if(theme.gold)      { r.setProperty('--gold', theme.gold); r.setProperty('--gold-light', adj(theme.gold,30)); }
-    if(theme.green)       r.setProperty('--green', theme.green);
-    var s = document.createElement('style');
-    s.id = 'vk-live-theme';
-    s.textContent =
-      '.card{border-radius:'+(theme.cardRadius!==undefined?theme.cardRadius:14)+'px!important}'+
-      '.card-name{font-size:'+(theme.cardNameFs!==undefined?theme.cardNameFs:13)+'px!important}'+
-      '.card-price{font-size:'+(theme.cardPriceFs!==undefined?theme.cardPriceFs:17)+'px!important}';
-    document.head.appendChild(s);
-  } catch(e){}
-})();
-</script>
 </head>
 <body>
 
@@ -165,6 +136,7 @@
     <div class="adm-nav">
       <span class="adm-nav-logo">ADMIN PANEL</span>
       <div style="display:flex;gap:8px">
+        <button class="adm-close" style="background:rgba(242,165,0,.15);color:var(--gold);border-color:rgba(242,165,0,.3)" onclick="window.open('editor.html','_blank')">🎨 محرر الواجهة</button>
         <button class="adm-close" style="background:rgba(217,48,48,.12);color:var(--red)" onclick="adminLogout()">🚪 خروج</button>
         <button class="adm-close" id="adm-close-btn" onclick="closeAdmin()">✕ إغلاق</button>
       </div>
@@ -193,123 +165,6 @@
           <textarea id="abt-ar" class="full" placeholder="النص بالعربية..."></textarea>
           <textarea id="abt-en" class="full" placeholder="English text..."></textarea>
           <button class="adm-btn-blue" id="abt-save-btn" onclick="saveAbout()">حفظ النص</button>
-        </div>
-      </div>
-
-      <!-- Theme Customizer -->
-      <div class="adm-sec">
-        <div class="adm-sec-title" id="adm-theme-title">🎨 تخصيص الواجهة</div>
-
-        <!-- Colors -->
-        <div class="theme-group-label" id="tg-colors">الألوان</div>
-        <div class="theme-row">
-          <label class="theme-label" id="tl-royal">اللون الملكي (الرئيسي)</label>
-          <div class="theme-color-wrap">
-            <input type="color" class="theme-color-inp" id="tc-royal" value="#1B3F8B" oninput="previewTheme()">
-            <span class="theme-color-val" id="tv-royal">#1B3F8B</span>
-          </div>
-        </div>
-        <div class="theme-row">
-          <label class="theme-label" id="tl-royal-deep">اللون الداكن (الخلفية)</label>
-          <div class="theme-color-wrap">
-            <input type="color" class="theme-color-inp" id="tc-royal-deep" value="#0D2359" oninput="previewTheme()">
-            <span class="theme-color-val" id="tv-royal-deep">#0D2359</span>
-          </div>
-        </div>
-        <div class="theme-row">
-          <label class="theme-label" id="tl-gold">لون الذهبي (المميز)</label>
-          <div class="theme-color-wrap">
-            <input type="color" class="theme-color-inp" id="tc-gold" value="#F2A500" oninput="previewTheme()">
-            <span class="theme-color-val" id="tv-gold">#F2A500</span>
-          </div>
-        </div>
-        <div class="theme-row">
-          <label class="theme-label" id="tl-green">لون الواتساب</label>
-          <div class="theme-color-wrap">
-            <input type="color" class="theme-color-inp" id="tc-green" value="#1A9E60" oninput="previewTheme()">
-            <span class="theme-color-val" id="tv-green">#1A9E60</span>
-          </div>
-        </div>
-
-        <!-- Hero texts -->
-        <div class="theme-group-label" id="tg-hero">نصوص الهيرو</div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label" id="tl-hero-title">العنوان الكبير (عربي)</label>
-          <input type="text" class="theme-inp" id="ti-hero-title-ar" placeholder="مثال: متجر الأقمصة" oninput="previewTheme()">
-        </div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label">العنوان الكبير (English)</label>
-          <input type="text" class="theme-inp" id="ti-hero-title-en" placeholder="e.g. Jersey Store" oninput="previewTheme()">
-        </div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label" id="tl-hero-sub">الوصف (عربي)</label>
-          <input type="text" class="theme-inp" id="ti-hero-sub-ar" placeholder="وصف المتجر بالعربية" oninput="previewTheme()">
-        </div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label">الوصف (English)</label>
-          <input type="text" class="theme-inp" id="ti-hero-sub-en" placeholder="Store description in English" oninput="previewTheme()">
-        </div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label" id="tl-hero-badge">الشارة (eyebrow)</label>
-          <input type="text" class="theme-inp" id="ti-hero-badge-ar" placeholder="★ الأصالة والأسلوب ★" oninput="previewTheme()">
-        </div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label">Eyebrow (English)</label>
-          <input type="text" class="theme-inp" id="ti-hero-badge-en" placeholder="★ Authenticity & Style ★" oninput="previewTheme()">
-        </div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label" id="tl-hero-cta">زر الهيرو (عربي)</label>
-          <input type="text" class="theme-inp" id="ti-hero-cta-ar" placeholder="تسوق الآن" oninput="previewTheme()">
-        </div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label">Hero button (English)</label>
-          <input type="text" class="theme-inp" id="ti-hero-cta-en" placeholder="Shop Now" oninput="previewTheme()">
-        </div>
-
-        <!-- Store name -->
-        <div class="theme-group-label" id="tg-brand">اسم المتجر</div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label" id="tl-store-name">اسم المتجر (شعار النافبار والفوتر)</label>
-          <input type="text" class="theme-inp" id="ti-store-name" placeholder="VINTAKIT" oninput="previewTheme()">
-        </div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label" id="tl-hero-brand">اسم المتجر في الهيرو (السطر الأول)</label>
-          <input type="text" class="theme-inp" id="ti-hero-brand1" placeholder="VINTA" oninput="previewTheme()">
-        </div>
-        <div class="theme-row theme-row-col">
-          <label class="theme-label" id="tl-hero-brand2">اسم المتجر في الهيرو (السطر المميز)</label>
-          <input type="text" class="theme-inp" id="ti-hero-brand2" placeholder="STORE" oninput="previewTheme()">
-        </div>
-
-        <!-- Font size -->
-        <div class="theme-group-label" id="tg-typography">الخطوط والمقاسات</div>
-        <div class="theme-row">
-          <label class="theme-label" id="tl-card-fontsize">حجم خط اسم القميص في البطاقة</label>
-          <div class="theme-range-wrap">
-            <input type="range" class="theme-range" id="tr-card-name" min="11" max="18" value="13" oninput="previewTheme()">
-            <span class="theme-range-val" id="trv-card-name">13px</span>
-          </div>
-        </div>
-        <div class="theme-row">
-          <label class="theme-label" id="tl-price-fontsize">حجم خط السعر في البطاقة</label>
-          <div class="theme-range-wrap">
-            <input type="range" class="theme-range" id="tr-card-price" min="13" max="22" value="17" oninput="previewTheme()">
-            <span class="theme-range-val" id="trv-card-price">17px</span>
-          </div>
-        </div>
-
-        <!-- Border radius -->
-        <div class="theme-row">
-          <label class="theme-label" id="tl-radius">انحناء الزوايا (البطاقات)</label>
-          <div class="theme-range-wrap">
-            <input type="range" class="theme-range" id="tr-radius" min="0" max="24" value="14" oninput="previewTheme()">
-            <span class="theme-range-val" id="trv-radius">14px</span>
-          </div>
-        </div>
-
-        <div class="theme-actions">
-          <button class="theme-save-btn" id="theme-save-btn" onclick="saveTheme()">💾 حفظ التخصيصات</button>
-          <button class="theme-reset-btn" id="theme-reset-btn" onclick="resetTheme()">↺ إعادة الضبط</button>
         </div>
       </div>
 
