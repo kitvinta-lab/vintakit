@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VINTAKIT — Visual Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --royal:#1B3F8B;--royal-deep:#0D2359;--royal-mid:#254BAD;
+  --gold:#F2A500;--gold-light:#F7C24E;
+  --white:#fff;--off:#F5F7FB;--border:#DDE3F0;
+  --text:#0D1F40;--text-mid:#4A5A7A;--text-light:#8A99B8;
+  --red:#D93030;--green:#1A9E60;
+  --panel:320px;
+}
+html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif}
+
+/* ── TOP BAR ── */
+.topbar{
+  height:52px;background:var(--royal-deep);border-bottom:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;position:fixed;top:0;left:0;right:0;z-index:1000;
+}
+.topbar-logo{font-family:'Oswald',sans-serif;color:var(--gold);font-size:18px;letter-spacing:3px}
+.topbar-center{display:flex;gap:6px}
+.tab-btn{
+  background:rgba(255,255,255,.06);border:1px solid transparent;
+  color:rgba(255,255,255,.55);font-size:12px;font-weight:700;
+  padding:5px 14px;border-radius:20px;cursor:pointer;
+  font-family:'Cairo',sans-serif;transition:all .2s;
+}
+.tab-btn.active,.tab-btn:hover{background:rgba(242,165,0,.15);border-color:rgba(242,165,0,.4);color:var(--gold)}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.btn-preview{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);
+  color:#fff;font-size:12px;font-weight:600;padding:5px 14px;
+  border-radius:20px;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .2s;
+}
+.btn-preview:hover{background:rgba(255,255,255,.15)}
+.btn-save{
+  background:var(--gold);color:var(--royal-deep);border:none;
+  font-size:13px;font-weight:900;padding:7px 20px;
+  border-radius:20px;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .2s;
+}
+.btn-save:hover{background:var(--gold-light)}
+.btn-reset{
+  background:rgba(217,48,48,.15);border:1px solid rgba(217,48,48,.3);
+  color:var(--red);font-size:12px;font-weight:600;padding:5px 12px;
+  border-radius:20px;cursor:pointer;font-family:'Cairo',sans-serif;
+}
+.device-btns{display:flex;gap:4px;margin:0 8px}
+.dev-btn{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.5);font-size:14px;padding:4px 10px;
+  border-radius:8px;cursor:pointer;transition:all .2s;
+}
+.dev-btn.active{background:rgba(242,165,0,.2);border-color:var(--gold);color:var(--gold)}
+
+/* ── LAYOUT ── */
+.editor-layout{
+  display:flex;height:calc(100vh - 52px);margin-top:52px;
+}
+
+/* ── PANEL ── */
+.panel{
+  width:var(--panel);min-width:var(--panel);
+  background:#fff;border-inline-start:1px solid var(--border);
+  overflow-y:auto;flex-shrink:0;
+  order:2;
+}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+.tab-content{display:none;padding:16px}
+.tab-content.active{display:block}
+
+/* ── SECTION LABEL ── */
+.sec-lbl{
+  font-size:10px;font-weight:700;color:var(--gold);letter-spacing:2px;
+  text-transform:uppercase;margin:16px 0 10px;padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.sec-lbl:first-child{margin-top:0}
+
+/* ── FIELD ── */
+.field{margin-bottom:12px}
+.field-label{font-size:11px;font-weight:700;color:var(--text-mid);margin-bottom:5px;display:block}
+.field input[type=text],
+.field input[type=number],
+.field textarea,
+.field select{
+  width:100%;border:1.5px solid var(--border);border-radius:8px;
+  padding:8px 10px;font-family:'Cairo',sans-serif;font-size:13px;color:var(--text);
+  transition:border-color .2s;background:#fff;
+}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--royal)}
+.field textarea{resize:vertical;min-height:70px}
+.field-row{display:flex;gap:8px}
+.field-row .field{flex:1;margin-bottom:0}
+
+/* ── COLOR FIELD ── */
+.color-field{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .2s}
+.color-field:hover{border-color:var(--royal)}
+.color-swatch{width:28px;height:28px;border-radius:6px;border:1px solid rgba(0,0,0,.1);flex-shrink:0}
+.color-field input[type=color]{position:absolute;opacity:0;width:0;height:0}
+.color-hex{font-size:12px;font-family:monospace;color:var(--text-mid);flex:1}
+.color-name{font-size:11px;font-weight:700;color:var(--text)}
+
+/* ── RANGE FIELD ── */
+.range-wrap{display:flex;align-items:center;gap:8px}
+.range-wrap input[type=range]{flex:1;accent-color:var(--royal);height:4px}
+.range-val{font-size:11px;font-family:monospace;color:var(--text-mid);min-width:36px;text-align:left}
+
+/* ── TOGGLE ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--off)}
+.toggle-lbl{font-size:12px;font-weight:600;color:var(--text-mid)}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:20px;cursor:pointer;transition:.3s}
+.toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked + .toggle-slider{background:var(--royal)}
+.toggle input:checked + .toggle-slider::before{transform:translateX(16px)}
+
+/* ── IMAGE UPLOAD ── */
+.img-upload{
+  border:2px dashed var(--border);border-radius:10px;padding:16px;
+  text-align:center;cursor:pointer;transition:all .2s;background:var(--off);
+}
+.img-upload:hover{border-color:var(--royal);background:#eef2ff}
+.img-upload-lbl{font-size:12px;color:var(--text-light);font-weight:600}
+.img-preview{width:100%;max-height:100px;object-fit:cover;border-radius:8px;margin-top:8px;display:none}
+.img-preview.show{display:block}
+
+/* ── BANNER CARDS ── */
+.banner-card{
+  background:var(--off);border:1.5px solid var(--border);border-radius:10px;
+  padding:12px;margin-bottom:10px;position:relative;
+}
+.banner-card-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.del-card-btn{background:#fde8e8;color:var(--red);border:none;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer}
+.add-card-btn{
+  width:100%;background:var(--off);border:1.5px dashed var(--border);
+  border-radius:8px;padding:9px;font-family:'Cairo',sans-serif;
+  font-size:12px;font-weight:700;color:var(--text-mid);cursor:pointer;
+  transition:all .2s;margin-top:4px;
+}
+.add-card-btn:hover{border-color:var(--royal);color:var(--royal);background:#eef2ff}
+
+/* ── FONT SELECT ── */
+.font-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.font-opt{
+  border:1.5px solid var(--border);border-radius:8px;padding:8px;
+  text-align:center;cursor:pointer;transition:all .2s;font-size:13px;
+}
+.font-opt.active{border-color:var(--royal);background:#eef2ff;color:var(--royal)}
+.font-opt:hover:not(.active){border-color:var(--royal-mid)}
+
+/* ── PREVIEW AREA ── */
+.preview-area{
+  flex:1;background:#e8edf5;display:flex;align-items:flex-start;
+  justify-content:center;padding:20px;overflow:auto;order:1;
+}
+.preview-frame-wrap{
+  background:#fff;box-shadow:0 8px 40px rgba(0,0,0,.15);
+  border-radius:12px;overflow:hidden;transition:width .3s,height .3s;
+  width:100%;max-width:1200px;height:calc(100vh - 92px);
+}
+.preview-frame-wrap.tablet{width:768px;height:600px}
+.preview-frame-wrap.mobile{width:390px;height:700px;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.preview-iframe{
+  width:100%;height:100%;border:none;
+}
+
+/* ── SECTIONS MANAGER ── */
+.section-item{
+  background:var(--off);border:1.5px solid var(--border);border-radius:10px;
+  padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;cursor:grab;
+}
+.section-item:active{cursor:grabbing}
+.section-drag{color:var(--text-light);font-size:16px;flex-shrink:0}
+.section-name{flex:1;font-size:13px;font-weight:700;color:var(--text)}
+.section-actions{display:flex;gap:5px}
+.sec-vis-btn{background:#eef2ff;color:var(--royal);border:none;border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer}
+.sec-vis-btn.hidden{background:#fde8e8;color:var(--red)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--royal-deep);color:var(--gold);
+  padding:10px 26px;border-radius:24px;font-size:13px;font-weight:600;
+  border:1px solid var(--gold);white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .3s;z-index:9999;
+}
+.toast.show{opacity:1}
+
+/* ── SCROLLBAR ── */
+.panel::-webkit-scrollbar{width:3px}
+.panel::-webkit-scrollbar-thumb{background:var(--border)}
+
+@media(max-width:900px){
+  .topbar-center{display:none}
+  .panel{width:100%;position:fixed;bottom:0;left:0;right:0;height:50vh;border-top:2px solid var(--gold);z-index:100;order:2}
+  .preview-area{order:1;height:50vh;padding:10px}
+  .editor-layout{flex-direction:column;height:calc(100vh - 52px)}
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-logo">VINTAKIT <span style="color:rgba(255,255,255,.4);font-size:11px;letter-spacing:1px;font-family:'Cairo',sans-serif">EDITOR</span></div>
+  <div class="topbar-center">
+    <button class="tab-btn active" onclick="switchTab('colors')" id="tb-colors">🎨 الألوان</button>
+    <button class="tab-btn" onclick="switchTab('navbar')" id="tb-navbar">🧭 النافبار</button>
+    <button class="tab-btn" onclick="switchTab('hero')" id="tb-hero">🖼 الهيرو</button>
+    <button class="tab-btn" onclick="switchTab('cards')" id="tb-cards">📦 البطاقات</button>
+    <button class="tab-btn" onclick="switchTab('sections')" id="tb-sections">📢 أقسام</button>
+    <button class="tab-btn" onclick="switchTab('footer')" id="tb-footer">📄 الفوتر</button>
+    <button class="tab-btn" onclick="switchTab('about')" id="tb-about">👤 من نحن</button>
+    <button class="tab-btn" onclick="switchTab('product')" id="tb-product">🛍 المنتج</button>
+  </div>
+  <div class="topbar-right">
+    <div class="device-btns">
+      <button class="dev-btn active" onclick="setDevice('desktop')" id="dev-desktop" title="Desktop">🖥</button>
+      <button class="dev-btn" onclick="setDevice('tablet')" id="dev-tablet" title="Tablet">📱</button>
+      <button class="dev-btn" onclick="setDevice('mobile')" id="dev-mobile" title="Mobile">📲</button>
+    </div>
+    <button class="btn-preview" onclick="openPreview()">↗ فتح</button>
+    <button class="btn-reset" onclick="resetAll()">↺</button>
+    <button class="btn-save" onclick="saveAll()">💾 حفظ</button>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="editor-layout">
+
+  <!-- PREVIEW -->
+  <div class="preview-area" id="preview-area">
+    <div class="preview-frame-wrap" id="frame-wrap">
+      <iframe class="preview-iframe" id="preview-frame" src="index.html"></iframe>
+    </div>
+  </div>
+
+  <!-- PANEL -->
+  <div class="panel" id="panel">
+
+    <!-- ══ COLORS ══ -->
+    <div class="tab-content active" id="tab-colors">
+      <div class="sec-lbl">الألوان الرئيسية</div>
+
+      <div class="field">
+        <label class="field-label">اللون الملكي (الرئيسي)</label>
+        <div class="color-field" onclick="this.querySelector('input').click()">
+          <div class="color-swatch" id="sw-royal" style="background:#1B3F8B"></div>
+          <input type="color" id="c-royal" value="#1B3F8B" oninput="liveColor('royal',this.value)">
+          <div>
+            <div class="color-name">Royal Blue</div>
+            <div class="color-hex" id="ch-royal">#1B3F8B</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">اللون الداكن (خلفية النافبار)</label>
+        <div class="color-field" onclick="this.querySelector('input').click()">
+          <div class="color-swatch" id="sw-royal-deep" style="background:#0D2359"></div>
+          <input type="color" id="c-royal-deep" value="#0D2359" oninput="liveColor('royal-deep',this.value)">
+          <div>
+            <div class="color-name">Deep Navy</div>
+            <div class="color-hex" id="ch-royal-deep">#0D2359</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">اللون الذهبي (المميز)</label>
+        <div class="color-field" onclick="this.querySelector('input').click()">
+          <div class="color-swatch" id="sw-gold" style="background:#F2A500"></div>
+          <input type="color" id="c-gold" value="#F2A500" oninput="liveColor('gold',this.value)">
+          <div>
+            <div class="color-name">Gold</div>
+            <div class="color-hex" id="ch-gold">#F2A500</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">لون الواتساب</label>
+        <div class="color-field" onclick="this.querySelector('input').click()">
+          <div class="color-swatch" id="sw-green" style="background:#1A9E60"></div>
+          <input type="color" id="c-green" value="#1A9E60" oninput="liveColor('green',this.value)">
+          <div>
+            <div class="color-name">WhatsApp Green</div>
+            <div class="color-hex" id="ch-green">#1A9E60</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">لون النص الرئيسي</label>
+        <div class="color-field" onclick="this.querySelector('input').click()">
+          <div class="color-swatch" id="sw-text" style="background:#0D1F40"></div>
+          <input type="color" id="c-text" value="#0D1F40" oninput="liveColor('text',this.value)">
+          <div>
+            <div class="color-name">Main Text</div>
+            <div class="color-hex" id="ch-text">#0D1F40</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-lbl">الخطوط</div>
+
+      <div class="field">
+        <label class="field-label">خط العناوين</label>
+        <div class="font-grid">
+          <div class="font-opt active" style="font-family:Oswald" onclick="setFont('heading','Oswald',this)">Oswald</div>
+          <div class="font-opt" style="font-family:Cairo" onclick="setFont('heading','Cairo',this)">Cairo</div>
+          <div class="font-opt" style="font-family:serif" onclick="setFont('heading','Georgia',this)">Georgia</div>
+          <div class="font-opt" style="font-family:monospace" onclick="setFont('heading','monospace',this)">Mono</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">حجم الخط العام</label>
+        <div class="range-wrap">
+          <input type="range" min="12" max="18" value="14" oninput="liveRange('base-font',this.value,'px');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="range-val">14px</span>
+        </div>
+      </div>
+
+      <div class="sec-lbl">ثيمات جاهزة</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="font-opt" style="background:#0D2359;color:#F2A500;border-color:#F2A500;font-weight:700" onclick="applyPreset('classic')">Classic Blue</div>
+        <div class="font-opt" style="background:#1a1a1a;color:#e63946;border-color:#e63946;font-weight:700" onclick="applyPreset('dark-red')">Dark Red</div>
+        <div class="font-opt" style="background:#2d6a4f;color:#95d5b2;border-color:#95d5b2;font-weight:700" onclick="applyPreset('forest')">Forest</div>
+        <div class="font-opt" style="background:#7b2d8b;color:#e0aaff;border-color:#e0aaff;font-weight:700" onclick="applyPreset('purple')">Royal Purple</div>
+      </div>
+    </div>
+
+    <!-- ══ NAVBAR ══ -->
+    <div class="tab-content" id="tab-navbar">
+      <div class="sec-lbl">الشعار</div>
+      <div class="field">
+        <label class="field-label">اسم المتجر</label>
+        <input type="text" id="n-storename" value="VINTAKIT" oninput="liveText('nav-logo',this.value);liveText('footer-logo',this.value)">
+      </div>
+
+      <div class="sec-lbl">الروابط</div>
+      <div class="field">
+        <label class="field-label">رابط 1 (عربي)</label>
+        <input type="text" id="n-link1-ar" value="المتجر" oninput="liveNavLink(1,'ar',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">رابط 1 (English)</label>
+        <input type="text" id="n-link1-en" value="Store" oninput="liveNavLink(1,'en',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">رابط 2 (عربي)</label>
+        <input type="text" id="n-link2-ar" value="من نحن" oninput="liveNavLink(2,'ar',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">رابط 2 (English)</label>
+        <input type="text" id="n-link2-en" value="About" oninput="liveNavLink(2,'en',this.value)">
+      </div>
+
+      <div class="sec-lbl">المظهر</div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">إظهار زر اللغة</span>
+        <label class="toggle"><input type="checkbox" id="n-show-lang" checked onchange="liveToggleEl('.lang-btn',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">إظهار زر الأدمين</span>
+        <label class="toggle"><input type="checkbox" id="n-show-adm" checked onchange="liveToggleEl('.adm-btn',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="sec-lbl">ارتفاع النافبار</div>
+      <div class="field">
+        <div class="range-wrap">
+          <input type="range" min="48" max="80" value="62" oninput="liveRange('nav-height',this.value,'px');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="range-val">62px</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HERO ══ -->
+    <div class="tab-content" id="tab-hero">
+      <div class="sec-lbl">النصوص</div>
+      <div class="field">
+        <label class="field-label">الكلمة الأولى (كبيرة)</label>
+        <input type="text" id="h-brand1" value="VINTA" oninput="liveHeroBrand()">
+      </div>
+      <div class="field">
+        <label class="field-label">الكلمة الذهبية</label>
+        <input type="text" id="h-brand2" value="STORE" oninput="liveHeroBrand()">
+      </div>
+      <div class="field">
+        <label class="field-label">الشارة (eyebrow) — عربي</label>
+        <input type="text" id="h-badge-ar" value="★ الأصالة والأسلوب ★" oninput="liveFrameEl('#h-eyebrow',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">الوصف — عربي</label>
+        <input type="text" id="h-sub-ar" value="قمصان جميع المنتخبات العالمية — أصيلة وعصرية 🌍" oninput="liveFrameEl('#h-sub',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">نص الزر — عربي</label>
+        <input type="text" id="h-cta-ar" value="تسوق الآن" oninput="liveFrameEl('#h-cta',this.value)">
+      </div>
+
+      <div class="sec-lbl">صورة الخلفية</div>
+      <div class="field">
+        <div class="img-upload" onclick="document.getElementById('h-bg-file').click()">
+          <div class="img-upload-lbl">📸 اضغط لرفع صورة خلفية</div>
+          <input type="file" id="h-bg-file" accept="image/*" style="display:none" onchange="handleHeroBg(this)">
+          <img id="h-bg-preview" class="img-preview">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">أو رابط صورة</label>
+        <input type="text" id="h-bg-url" placeholder="https://..." oninput="applyHeroBg(this.value)">
+      </div>
+
+      <div class="sec-lbl">المظهر</div>
+      <div class="field">
+        <label class="field-label">ارتفاع الهيرو</label>
+        <div class="range-wrap">
+          <input type="range" min="300" max="700" value="420" oninput="liveFrameStyle('.hero','padding-top',this.value/6+'px');liveFrameStyle('.hero','padding-bottom',this.value/7+'px');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="range-val">420px</span>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">إظهار الإحصائيات</span>
+        <label class="toggle"><input type="checkbox" id="h-show-stats" checked onchange="liveToggleFrameEl('.hero-stats',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">إظهار النمط الهندسي</span>
+        <label class="toggle"><input type="checkbox" id="h-show-pattern" checked onchange="liveToggleFrameEl('.hero-pattern',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <!-- ══ CARDS ══ -->
+    <div class="tab-content" id="tab-cards">
+      <div class="sec-lbl">الشكل والحجم</div>
+      <div class="field">
+        <label class="field-label">انحناء الزوايا</label>
+        <div class="range-wrap">
+          <input type="range" min="0" max="28" value="14" oninput="liveFrameCSS('.card','border-radius',this.value+'px');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="range-val">14px</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">ارتفاع صورة البطاقة</label>
+        <div class="range-wrap">
+          <input type="range" min="120" max="260" value="175" oninput="liveFrameCSS('.card-img-wrap','height',this.value+'px');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="range-val">175px</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">حجم اسم القميص</label>
+        <div class="range-wrap">
+          <input type="range" min="11" max="18" value="13" oninput="liveFrameCSS('.card-name','font-size',this.value+'px');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="range-val">13px</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">حجم السعر</label>
+        <div class="range-wrap">
+          <input type="range" min="13" max="24" value="17" oninput="liveFrameCSS('.card-price','font-size',this.value+'px');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="range-val">17px</span>
+        </div>
+      </div>
+
+      <div class="sec-lbl">التأثيرات</div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">تأثير الرفع عند التمرير</span>
+        <label class="toggle"><input type="checkbox" id="card-hover" checked onchange="liveCardHover(this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">إظهار الظل</span>
+        <label class="toggle"><input type="checkbox" id="card-shadow" checked onchange="liveCardShadow(this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="sec-lbl">تخطيط الشبكة</div>
+      <div class="field">
+        <label class="field-label">الحد الأدنى لعرض البطاقة</label>
+        <div class="range-wrap">
+          <input type="range" min="150" max="300" value="200" oninput="liveFrameCSS('.grid','grid-template-columns','repeat(auto-fill,minmax('+this.value+'px,1fr))');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="range-val">200px</span>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">المسافة بين البطاقات</label>
+        <div class="range-wrap">
+          <input type="range" min="8" max="32" value="20" oninput="liveFrameCSS('.grid','gap',this.value+'px');this.nextElementSibling.textContent=this.value+'px'">
+          <span class="range-val">20px</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SECTIONS ══ -->
+    <div class="tab-content" id="tab-sections">
+      <div class="sec-lbl">ترتيب وإظهار الأقسام</div>
+      <div id="sections-list">
+        <div class="section-item" draggable="true">
+          <span class="section-drag">⠿</span>
+          <span class="section-name">🖼 الهيرو</span>
+          <div class="section-actions">
+            <button class="sec-vis-btn" onclick="toggleSection(this,'hero')">مرئي</button>
+          </div>
+        </div>
+        <div class="section-item" draggable="true">
+          <span class="section-drag">⠿</span>
+          <span class="section-name">🏷 فلاتر القارات</span>
+          <div class="section-actions">
+            <button class="sec-vis-btn" onclick="toggleSection(this,'filters')">مرئي</button>
+          </div>
+        </div>
+        <div class="section-item" draggable="true">
+          <span class="section-drag">⠿</span>
+          <span class="section-name">📦 شبكة القمصان</span>
+          <div class="section-actions">
+            <button class="sec-vis-btn" onclick="toggleSection(this,'grid-section')">مرئي</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-lbl">إضافة قسم جديد</div>
+
+      <!-- BANNER -->
+      <div class="banner-card" id="banner-section" style="display:none">
+        <div class="banner-card-title">
+          📢 بانر إعلاني
+          <button class="del-card-btn" onclick="removeSection('banner')">حذف</button>
+        </div>
+        <div class="field"><label class="field-label">النص (عربي)</label><input type="text" id="bs-text-ar" placeholder="عرض خاص! خصم 20% على كل القمصان" oninput="updateBanner()"></div>
+        <div class="field"><label class="field-label">لون الخلفية</label>
+          <div class="color-field" onclick="this.querySelector('input').click()">
+            <div class="color-swatch" id="sw-banner" style="background:#F2A500"></div>
+            <input type="color" id="c-banner" value="#F2A500" oninput="document.getElementById('sw-banner').style.background=this.value;updateBanner()">
+            <div class="color-hex" id="ch-banner">#F2A500</div>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-lbl">قابل للإغلاق</span>
+          <label class="toggle"><input type="checkbox" id="bs-closable" checked><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <!-- FEATURED -->
+      <div class="banner-card" id="featured-section" style="display:none">
+        <div class="banner-card-title">
+          ⭐ قسم المميز
+          <button class="del-card-btn" onclick="removeSection('featured')">حذف</button>
+        </div>
+        <div class="field"><label class="field-label">عنوان القسم (عربي)</label><input type="text" id="fs-title-ar" placeholder="قمصان مميزة" oninput="updateFeatured()"></div>
+        <div class="field"><label class="field-label">عنوان القسم (English)</label><input type="text" id="fs-title-en" placeholder="Featured Jerseys" oninput="updateFeatured()"></div>
+      </div>
+
+      <!-- PROMO -->
+      <div class="banner-card" id="promo-section" style="display:none">
+        <div class="banner-card-title">
+          🏷 قسم العروض
+          <button class="del-card-btn" onclick="removeSection('promo')">حذف</button>
+        </div>
+        <div class="field"><label class="field-label">عنوان (عربي)</label><input type="text" id="ps-title-ar" placeholder="عروض خاصة" oninput="updatePromo()"></div>
+        <div class="field"><label class="field-label">نسبة الخصم %</label><input type="number" id="ps-discount" placeholder="20" min="1" max="90" oninput="updatePromo()"></div>
+      </div>
+
+      <button class="add-card-btn" onclick="showAddSection()">+ إضافة قسم جديد</button>
+      <div id="add-section-menu" style="display:none;margin-top:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <button class="add-card-btn" onclick="addSection('banner')">📢 بانر</button>
+          <button class="add-card-btn" onclick="addSection('featured')">⭐ مميز</button>
+          <button class="add-card-btn" onclick="addSection('promo')">🏷 عروض</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FOOTER ══ -->
+    <div class="tab-content" id="tab-footer">
+      <div class="sec-lbl">النصوص</div>
+      <div class="field">
+        <label class="field-label">نص حقوق الملكية (عربي)</label>
+        <input type="text" id="ft-copy-ar" value="© 2024 — جميع الحقوق محفوظة" oninput="liveFrameEl('#ft-home',this.value);liveFrameEl('#ft-prod',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">نص إضافي (رابط انستغرام مثلاً)</label>
+        <input type="text" id="ft-extra" placeholder="@vintakit" oninput="updateFooterExtra(this.value)">
+      </div>
+
+      <div class="sec-lbl">المظهر</div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">إظهار الفوتر</span>
+        <label class="toggle"><input type="checkbox" checked onchange="liveToggleFrameEl('.footer',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+
+    <!-- ══ ABOUT ══ -->
+    <div class="tab-content" id="tab-about">
+      <div class="sec-lbl">صورة الغلاف</div>
+      <div class="field">
+        <div class="img-upload" onclick="document.getElementById('ab-img-file').click()">
+          <div class="img-upload-lbl">📸 صورة غلاف "من نحن"</div>
+          <input type="file" id="ab-img-file" accept="image/*" style="display:none" onchange="handleAboutImg(this)">
+          <img id="ab-img-preview" class="img-preview">
+        </div>
+      </div>
+
+      <div class="sec-lbl">النصوص</div>
+      <div class="field">
+        <label class="field-label">العنوان (عربي)</label>
+        <input type="text" id="ab-title-ar" value="من نحن" oninput="liveFrameEl('#ab-title',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">العنوان (English)</label>
+        <input type="text" id="ab-title-en" value="About Us">
+      </div>
+      <div class="field">
+        <label class="field-label">الوصف المختصر</label>
+        <input type="text" id="ab-sub-ar" value="VINTAKIT — شغف بكرة القدم والأسلوب" oninput="liveFrameEl('#ab-sub',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">قصتنا (عربي)</label>
+        <textarea id="ab-story-ar" oninput="liveFrameEl('#ab-text',this.value)">Vintakit هو متجر متخصص في قمصان المنتخبات الوطنية من حول العالم. نجمع بين الأصالة والأسلوب العصري لنقدم لك أفضل قمصان المنتخبات بجودة عالية وأسعار مناسبة.</textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">قصتنا (English)</label>
+        <textarea id="ab-story-en" placeholder="Our story in English..."></textarea>
+      </div>
+
+      <div class="sec-lbl">قيم الشركة</div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">قيمة 1</label><input type="text" id="v1" value="الجودة" oninput="liveFrameEl('#v1t',this.value)"></div>
+        <div class="field"><label class="field-label">وصف</label><input type="text" id="v1d" value="قمصان أصيلة" oninput="liveFrameEl('#v1d',this.value)"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label class="field-label">قيمة 2</label><input type="text" id="v2" value="التنوع" oninput="liveFrameEl('#v2t',this.value)"></div>
+        <div class="field"><label class="field-label">وصف</label><input type="text" id="v2d" value="جميع المنتخبات" oninput="liveFrameEl('#v2d',this.value)"></div>
+      </div>
+    </div>
+
+    <!-- ══ PRODUCT PAGE ══ -->
+    <div class="tab-content" id="tab-product">
+      <div class="sec-lbl">تخطيط صفحة المنتج</div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">إظهار اقتراحات المنتجات</span>
+        <label class="toggle"><input type="checkbox" checked onchange="liveToggleFrameEl('.sugg-section',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-lbl">إظهار عدد الاقتراحات</span>
+        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+      </div>
+
+      <div class="sec-lbl">عنوان قسم الاقتراحات</div>
+      <div class="field">
+        <label class="field-label">العنوان (عربي)</label>
+        <input type="text" value="قمصان قد تعجبك" oninput="liveFrameEl('#sugg-title',this.value)">
+      </div>
+
+      <div class="sec-lbl">أزرار صفحة المنتج</div>
+      <div class="field">
+        <label class="field-label">نص زر الواتساب (عربي)</label>
+        <input type="text" value="اطلب عبر واتساب" oninput="liveFrameEl('#pd-wa-txt',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">نص زر الرجوع (عربي)</label>
+        <input type="text" value="← رجوع" oninput="liveFrameEl('#back-btn',this.value)">
+      </div>
+
+      <div class="sec-lbl">حجم صورة المنتج الرئيسية</div>
+      <div class="field">
+        <div class="range-wrap">
+          <input type="range" min="50" max="100" value="75" oninput="liveFrameCSS('.prod-layout','grid-template-columns',this.value+'% 1fr');this.nextElementSibling.textContent=this.value+'%'">
+          <span class="range-val">75%</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /panel -->
+</div><!-- /editor-layout -->
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="js/script.js"></script>
+<script>
+// ── FRAME REF ──
+var frame = document.getElementById('preview-frame');
+function fw(){ return frame.contentWindow; }
+function fd(){ return frame.contentDocument || frame.contentWindow.document; }
+
+frame.onload = function(){
+  loadSavedTheme();
+};
+
+// ── TABS ──
+function switchTab(id){
+  document.querySelectorAll('.tab-content').forEach(function(el){ el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el){ el.classList.remove('active'); });
+  document.getElementById('tab-'+id).classList.add('active');
+  document.getElementById('tb-'+id).classList.add('active');
+  // navigate iframe to relevant page
+  if(id==='about') fw().goPage && fw().goPage('about');
+  else if(id==='product'){
+    var prods = fw().products;
+    if(prods && prods.length) fw().openProduct && fw().openProduct(prods[0].id);
+  } else {
+    fw().goPage && fw().goPage('home');
+  }
+}
+
+// ── DEVICE ──
+function setDevice(d){
+  document.querySelectorAll('.dev-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('dev-'+d).classList.add('active');
+  var wrap = document.getElementById('frame-wrap');
+  wrap.className = 'preview-frame-wrap ' + (d==='desktop'?'':d);
+}
+
+// ── LIVE COLOR ──
+function liveColor(key, val){
+  document.getElementById('sw-'+key).style.background = val;
+  document.getElementById('ch-'+key).textContent = val;
+  // apply to iframe via CSS var
+  var cssKey = '--' + key.replace('royal-deep','royal-deep').replace('royal','royal');
+  try{
+    fd().documentElement.style.setProperty('--'+key, val);
+    if(key==='royal'){
+      fd().documentElement.style.setProperty('--royal-mid', adjustColor(val,20));
+    }
+    if(key==='gold'){
+      fd().documentElement.style.setProperty('--gold-light', adjustColor(val,30));
+    }
+  }catch(e){}
+}
+
+function adjustColor(hex,amt){
+  hex=hex.replace('#','');
+  var r=Math.min(255,parseInt(hex.slice(0,2),16)+amt);
+  var g=Math.min(255,parseInt(hex.slice(2,4),16)+amt);
+  var b=Math.min(255,parseInt(hex.slice(4,6),16)+amt);
+  return '#'+[r,g,b].map(function(v){return ('0'+v.toString(16)).slice(-2)}).join('');
+}
+
+// ── LIVE TEXT ──
+function liveText(sel, val){
+  try{
+    fd().querySelectorAll(sel).forEach(function(el){ el.textContent = val; });
+  }catch(e){}
+}
+
+function liveFrameEl(sel, val){
+  try{
+    var el = fd().querySelector(sel);
+    if(el) el.textContent = val;
+  }catch(e){}
+}
+
+// ── LIVE CSS ──
+function liveFrameCSS(sel, prop, val){
+  try{
+    fd().querySelectorAll(sel).forEach(function(el){ el.style[prop.replace(/-([a-z])/g,function(g){return g[1].toUpperCase()})]=val; });
+  }catch(e){}
+}
+
+function liveFrameStyle(sel, prop, val){ liveFrameCSS(sel,prop,val); }
+
+function liveRange(key, val, unit){
+  try{ fd().documentElement.style.setProperty('--'+key, val+unit); }catch(e){}
+}
+
+// ── TOGGLE ──
+function liveToggleEl(sel, show){
+  try{
+    fd().querySelectorAll(sel).forEach(function(el){ el.style.display = show?'':'none'; });
+  }catch(e){}
+}
+function liveToggleFrameEl(sel, show){ liveToggleEl(sel, show); }
+
+// ── HERO BRAND ──
+function liveHeroBrand(){
+  var b1 = document.getElementById('h-brand1').value || 'VINTA';
+  var b2 = document.getElementById('h-brand2').value || 'STORE';
+  try{
+    var el = fd().querySelector('.hero-title');
+    if(el) el.innerHTML = b1 + ' <em>' + b2 + '</em>';
+  }catch(e){}
+}
+
+// ── HERO BG ──
+function handleHeroBg(input){
+  var file = input.files[0]; if(!file) return;
+  var r = new FileReader();
+  r.onload = function(e){
+    document.getElementById('h-bg-preview').src = e.target.result;
+    document.getElementById('h-bg-preview').classList.add('show');
+    applyHeroBg(e.target.result);
+    currentTheme.heroBg = e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+function applyHeroBg(src){
+  if(!src) return;
+  try{
+    var hero = fd().querySelector('.hero');
+    if(hero){
+      hero.style.backgroundImage = 'url("'+src+'")';
+      hero.style.backgroundSize = 'cover';
+      hero.style.backgroundPosition = 'center';
+    }
+  }catch(e){}
+}
+
+// ── ABOUT IMG ──
+function handleAboutImg(input){
+  var file = input.files[0]; if(!file) return;
+  var r = new FileReader();
+  r.onload = function(e){
+    document.getElementById('ab-img-preview').src = e.target.result;
+    document.getElementById('ab-img-preview').classList.add('show');
+  };
+  r.readAsDataURL(file);
+}
+
+// ── FONT ──
+function setFont(type, font, btn){
+  document.querySelectorAll('.font-grid .font-opt').forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  try{
+    fd().querySelectorAll('.hero-title,.nav-logo,.footer-logo').forEach(function(el){ el.style.fontFamily=font; });
+  }catch(e){}
+}
+
+// ── CARD EFFECTS ──
+function liveCardHover(on){
+  var style = fd().getElementById('vk-live-theme') || createLiveStyle();
+  // inject hover style
+}
+function liveCardShadow(on){
+  try{
+    fd().querySelectorAll('.card').forEach(function(el){
+      el.style.boxShadow = on ? '' : 'none';
+    });
+  }catch(e){}
+}
+function createLiveStyle(){
+  var s = fd().createElement('style'); s.id='vk-live-theme2';
+  fd().head.appendChild(s); return s;
+}
+
+// ── NAV LINKS ──
+function liveNavLink(num, lang, val){
+  // stored for save
+  currentTheme['navLink'+num+lang.toUpperCase()] = val;
+}
+
+// ── SECTIONS ──
+function toggleSection(btn, cls){
+  var hidden = btn.classList.toggle('hidden');
+  btn.textContent = hidden ? 'مخفي' : 'مرئي';
+  liveToggleFrameEl('.'+cls, !hidden);
+}
+function showAddSection(){
+  var m = document.getElementById('add-section-menu');
+  m.style.display = m.style.display==='none'?'block':'none';
+}
+function addSection(type){
+  document.getElementById(type+'-section').style.display = 'block';
+  document.getElementById('add-section-menu').style.display = 'none';
+  if(type==='banner') updateBanner();
+  if(type==='featured') updateFeatured();
+  if(type==='promo') updatePromo();
+}
+function removeSection(type){
+  document.getElementById(type+'-section').style.display = 'none';
+  removeSectionFromFrame(type);
+}
+function removeSectionFromFrame(type){
+  try{
+    var el = fd().getElementById('vk-'+type+'-section');
+    if(el) el.remove();
+  }catch(e){}
+}
+
+function updateBanner(){
+  var text = document.getElementById('bs-text-ar').value;
+  var color = document.getElementById('c-banner').value;
+  var closable = document.getElementById('bs-closable').checked;
+  try{
+    var fw2 = fd();
+    var existing = fw2.getElementById('vk-banner-section');
+    if(!existing){
+      existing = fw2.createElement('div');
+      existing.id = 'vk-banner-section';
+      var nav = fw2.querySelector('.nav');
+      nav.parentNode.insertBefore(existing, nav.nextSibling);
+    }
+    existing.style.cssText = 'background:'+color+';color:#0D2359;text-align:center;padding:10px 40px;font-size:13px;font-weight:700;position:relative;font-family:Cairo,sans-serif';
+    existing.innerHTML = text + (closable?'<button onclick="this.parentNode.remove()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;cursor:pointer;color:inherit">×</button>':'');
+  }catch(e){}
+}
+
+function updateFeatured(){
+  var title = document.getElementById('fs-title-ar').value || 'قمصان مميزة';
+  try{
+    var fw2 = fd();
+    var grid = fw2.querySelector('.grid-section');
+    var existing = fw2.getElementById('vk-featured-section');
+    if(!existing){
+      existing = fw2.createElement('div');
+      existing.id = 'vk-featured-section';
+      existing.style.cssText = 'padding:20px 28px 0;max-width:1280px;margin:0 auto';
+      grid.parentNode.insertBefore(existing, grid);
+    }
+    existing.innerHTML = '<div style="font-size:19px;font-weight:900;color:#0D1F40;padding-bottom:10px;border-bottom:2px solid #F2A500;margin-bottom:16px;display:flex;align-items:center;gap:8px"><span style=color:#F2A500>★</span>'+title+'</div>';
+  }catch(e){}
+}
+
+function updatePromo(){
+  var title = document.getElementById('ps-title-ar').value || 'عروض خاصة';
+  var disc = document.getElementById('ps-discount').value || '20';
+  try{
+    var fw2 = fd();
+    var existing = fw2.getElementById('vk-promo-section');
+    if(!existing){
+      existing = fw2.createElement('div');
+      existing.id = 'vk-promo-section';
+      existing.style.cssText = 'background:linear-gradient(135deg,#1B3F8B,#0D2359);padding:24px 28px;text-align:center;color:#fff;font-family:Cairo,sans-serif';
+      var footer = fw2.querySelector('#page-home .footer');
+      footer.parentNode.insertBefore(existing, footer);
+    }
+    existing.innerHTML = '<div style="font-size:22px;font-weight:900;margin-bottom:4px">'+title+'</div><div style="color:#F2A500;font-size:32px;font-weight:900">خصم '+disc+'%</div>';
+  }catch(e){}
+}
+
+function updateFooterExtra(val){
+  try{
+    var fw2 = fd();
+    var existing = fw2.getElementById('vk-footer-extra');
+    if(!existing){
+      existing = fw2.createElement('div');
+      existing.id = 'vk-footer-extra';
+      existing.style.cssText = 'color:rgba(255,255,255,.5);font-size:12px;margin-top:4px';
+      fw2.querySelector('#ft-home').parentNode.appendChild(existing);
+    }
+    existing.textContent = val;
+  }catch(e){}
+}
+
+// ── PRESETS ──
+var PRESETS = {
+  'classic':    {royal:'#1B3F8B',royalDeep:'#0D2359',gold:'#F2A500',green:'#1A9E60'},
+  'dark-red':   {royal:'#8B1B1B',royalDeep:'#1a0000',gold:'#e63946',green:'#2a9d8f'},
+  'forest':     {royal:'#2d6a4f',royalDeep:'#1b4332',gold:'#95d5b2',green:'#52b788'},
+  'purple':     {royal:'#7b2d8b',royalDeep:'#4a0e5e',gold:'#e0aaff',green:'#9d4edd'}
+};
+function applyPreset(name){
+  var p = PRESETS[name]; if(!p) return;
+  ['royal','royal-deep','gold','green'].forEach(function(k){
+    var key = k.replace('-','');
+    if(k==='royal-deep') key='royalDeep';
+    var val = p[k] || p[key];
+    if(!val) return;
+    var inp = document.getElementById('c-'+k);
+    if(inp){ inp.value=val; liveColor(k,val); }
+  });
+  toast('تم تطبيق الثيم ✓');
+}
+
+// ── OPEN PREVIEW ──
+function openPreview(){
+  window.open('index.html','_blank');
+}
+
+// ── THEME STATE ──
+var currentTheme = {};
+
+function collectTheme(){
+  return {
+    royal:       document.getElementById('c-royal').value,
+    royalDeep:   document.getElementById('c-royal-deep').value,
+    gold:        document.getElementById('c-gold').value,
+    green:       document.getElementById('c-green').value,
+    storeName:   document.getElementById('n-storename').value,
+    heroBrand1:  document.getElementById('h-brand1').value,
+    heroBrand2:  document.getElementById('h-brand2').value,
+    heroBadgeAr: document.getElementById('h-badge-ar').value,
+    heroSubAr:   document.getElementById('h-sub-ar').value,
+    heroCtaAr:   document.getElementById('h-cta-ar').value,
+    heroBg:      currentTheme.heroBg || '',
+    footerCopyAr:document.getElementById('ft-copy-ar').value,
+    aboutTitleAr:document.getElementById('ab-title-ar').value,
+    aboutSubAr:  document.getElementById('ab-sub-ar').value,
+    aboutStoryAr:document.getElementById('ab-story-ar').value,
+    aboutStoryEn:document.getElementById('ab-story-en').value,
+    navLink1ar:  document.getElementById('n-link1-ar').value,
+    navLink1en:  document.getElementById('n-link1-en').value,
+    navLink2ar:  document.getElementById('n-link2-ar').value,
+    navLink2en:  document.getElementById('n-link2-en').value,
+    bannerText:  document.getElementById('bs-text-ar').value,
+    bannerColor: document.getElementById('c-banner').value,
+    bannerOn:    document.getElementById('banner-section').style.display !== 'none',
+    featuredOn:  document.getElementById('featured-section').style.display !== 'none',
+    featuredTitle:document.getElementById('fs-title-ar').value,
+    promoOn:     document.getElementById('promo-section').style.display !== 'none',
+    promoTitle:  document.getElementById('ps-title-ar').value,
+    promoDisc:   document.getElementById('ps-discount').value
+  };
+}
+
+function saveAll(){
+  var theme = collectTheme();
+  localStorage.setItem('vk-theme', JSON.stringify(theme));
+  if(typeof db !== 'undefined' && db){
+    db.collection('meta').doc('theme').set(theme)
+      .then(function(){ toast('تم حفظ كل التغييرات ✓'); })
+      .catch(function(){ toast('تم الحفظ محلياً ✓'); });
+  } else {
+    toast('تم الحفظ ✓');
+  }
+}
+
+function loadSavedTheme(){
+  var saved = JSON.parse(localStorage.getItem('vk-theme')||'null');
+  if(!saved) return;
+  // populate inputs
+  if(saved.royal)       { document.getElementById('c-royal').value=saved.royal; liveColor('royal',saved.royal); }
+  if(saved.royalDeep)   { document.getElementById('c-royal-deep').value=saved.royalDeep; liveColor('royal-deep',saved.royalDeep); }
+  if(saved.gold)        { document.getElementById('c-gold').value=saved.gold; liveColor('gold',saved.gold); }
+  if(saved.green)       { document.getElementById('c-green').value=saved.green; liveColor('green',saved.green); }
+  if(saved.storeName)   document.getElementById('n-storename').value=saved.storeName;
+  if(saved.heroBrand1)  document.getElementById('h-brand1').value=saved.heroBrand1;
+  if(saved.heroBrand2)  document.getElementById('h-brand2').value=saved.heroBrand2;
+  if(saved.heroBadgeAr) document.getElementById('h-badge-ar').value=saved.heroBadgeAr;
+  if(saved.heroSubAr)   document.getElementById('h-sub-ar').value=saved.heroSubAr;
+  if(saved.heroCtaAr)   document.getElementById('h-cta-ar').value=saved.heroCtaAr;
+  if(saved.aboutStoryAr)document.getElementById('ab-story-ar').value=saved.aboutStoryAr;
+  if(saved.aboutStoryEn)document.getElementById('ab-story-en').value=saved.aboutStoryEn;
+  if(saved.bannerOn)    { document.getElementById('banner-section').style.display='block'; updateBanner(); }
+  if(saved.featuredOn)  { document.getElementById('featured-section').style.display='block'; updateFeatured(); }
+  if(saved.promoOn)     { document.getElementById('promo-section').style.display='block'; updatePromo(); }
+  if(saved.heroBg)      applyHeroBg(saved.heroBg);
+}
+
+function resetAll(){
+  if(!confirm('هل أنت متأكد من إعادة الضبط الكامل؟')) return;
+  localStorage.removeItem('vk-theme');
+  if(typeof db!=='undefined'&&db) db.collection('meta').doc('theme').delete().catch(function(){});
+  frame.src = frame.src; // reload iframe
+  toast('تم إعادة الضبط ✓');
+}
+
+// ── TOAST ──
+function toast(msg){
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 2400);
+}
+
+// Load saved theme when iframe is ready
+frame.addEventListener('load', loadSavedTheme);
+</script>
+</body>
+</html>
