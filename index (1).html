@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VINTAKIT — Vinta Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo" onclick="goPage('home')">VINTAKIT</div>
+  <div class="nav-center">
+    <span class="nav-link active" id="nl-home" onclick="goPage('home')" data-ar="المتجر" data-en="Store">المتجر</span>
+    <span class="nav-link" id="nl-about" onclick="goPage('about')" data-ar="من نحن" data-en="About">من نحن</span>
+  </div>
+  <div class="nav-right">
+    <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
+    <button class="adm-btn" onclick="openAdmin()" title="Admin">⚙</button>
+  </div>
+</nav>
+
+<!-- ══════════ HOME ══════════ -->
+<div id="page-home" class="page active">
+  <div class="hero">
+    <div class="hero-pattern"></div>
+    <div class="hero-eyebrow" id="h-eyebrow">★ الأصالة والأسلوب ★</div>
+    <h1 class="hero-title">VINTA <em>STORE</em></h1>
+    <p class="hero-sub" id="h-sub">قمصان جميع المنتخبات العالمية — أصيلة وعصرية 🌍</p>
+    <button class="hero-cta" id="h-cta" onclick="document.getElementById('shop-anchor').scrollIntoView({behavior:'smooth'})">تسوق الآن</button>
+    <div class="hero-stats">
+      <div><div class="hero-stat-num" id="hs-count">0</div><div class="hero-stat-lbl" id="hs-lbl1">قميص</div></div>
+      <div><div class="hero-stat-num" id="hs-nations">0</div><div class="hero-stat-lbl" id="hs-lbl2">منتخب</div></div>
+      <div><div class="hero-stat-num">🇲🇦</div><div class="hero-stat-lbl" id="hs-lbl3">الأسود</div></div>
+    </div>
+  </div>
+
+  <div class="filters" id="shop-anchor">
+    <button class="filter-btn active" onclick="setFilter('all',this)" id="f-all">الكل</button>
+    <button class="filter-btn" onclick="setFilter('africa',this)" id="f-africa">إفريقيا</button>
+    <button class="filter-btn" onclick="setFilter('europe',this)" id="f-europe">أوروبا</button>
+    <button class="filter-btn" onclick="setFilter('america',this)" id="f-america">أمريكا</button>
+    <button class="filter-btn" onclick="setFilter('asia',this)" id="f-asia">آسيا</button>
+  </div>
+
+  <div class="grid-section">
+    <div class="grid" id="main-grid"></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-logo">VINTAKIT</div>
+    <div class="footer-sub" id="ft-home">© 2024 — جميع الحقوق محفوظة</div>
+  </div>
+</div>
+
+<!-- ══════════ PRODUCT ══════════ -->
+<div id="page-product" class="page">
+  <div class="prod-wrap">
+    <button class="back-btn" id="back-btn" onclick="goPage('home')">← رجوع</button>
+    <div class="prod-layout">
+      <div>
+        <div id="prod-img-main"></div>
+        <div class="prod-thumbs" id="prod-thumbs"></div>
+      </div>
+      <div>
+        <div class="prod-eyebrow" id="pd-eyebrow">VINTAKIT STORE</div>
+        <div class="prod-flag" id="pd-flag"></div>
+        <div class="prod-country" id="pd-country"></div>
+        <h1 class="prod-title" id="pd-title"></h1>
+        <div class="prod-price" id="pd-price"></div>
+        <div class="prod-sold-banner" id="pd-sold" style="display:none"></div>
+        <div class="prod-label" id="pd-size-lbl">اختر المقاس</div>
+        <div class="prod-sizes" id="pd-sizes"></div>
+        <button class="prod-wa" id="pd-wa-btn" onclick="orderFromProduct()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.116 1.523 5.845L0 24l6.324-1.5A11.933 11.933 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.846 0-3.574-.482-5.072-1.326l-.364-.215-3.753.89.943-3.648-.236-.374A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          <span id="pd-wa-txt">اطلب عبر واتساب</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sugg-section">
+    <div class="sugg-title" id="sugg-title">قمصان قد تعجبك</div>
+    <div class="sugg-grid" id="sugg-grid"></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-logo">VINTAKIT</div>
+    <div class="footer-sub" id="ft-prod">© 2024 — جميع الحقوق محفوظة</div>
+  </div>
+</div>
+
+<!-- ══════════ ABOUT ══════════ -->
+<div id="page-about" class="page">
+  <div class="about-hero">
+    <h1 id="ab-title">من نحن</h1>
+    <p id="ab-sub">VINTAKIT — شغف بكرة القدم والأسلوب</p>
+  </div>
+  <div class="about-body">
+    <div class="about-card">
+      <h2 id="ab-h2">قصتنا</h2>
+      <p id="ab-text">Vintakit هو متجر متخصص في قمصان المنتخبات الوطنية من حول العالم. نجمع بين الأصالة والأسلوب العصري لنقدم لك أفضل قمصان المنتخبات بجودة عالية وأسعار مناسبة. نبدأ بالمنتخب المغربي وأسود الأطلس، ونتوسع تدريجياً لتشمل جميع المنتخبات العالمية.</p>
+    </div>
+    <div class="values-grid">
+      <div class="val"><div class="val-icon">🏆</div><div class="val-title" id="v1t">الجودة</div><div class="val-desc" id="v1d">قمصان أصيلة بأعلى معايير الجودة</div></div>
+      <div class="val"><div class="val-icon">🌍</div><div class="val-title" id="v2t">التنوع</div><div class="val-desc" id="v2d">جميع المنتخبات من كل القارات</div></div>
+      <div class="val"><div class="val-icon">⚡</div><div class="val-title" id="v3t">السرعة</div><div class="val-desc" id="v3d">توصيل سريع لباب منزلك</div></div>
+      <div class="val"><div class="val-icon">💬</div><div class="val-title" id="v4t">التواصل</div><div class="val-desc" id="v4d">خدمة عبر واتساب على مدار الساعة</div></div>
+    </div>
+  </div>
+  <div class="footer">
+    <div class="footer-logo">VINTAKIT</div>
+    <div class="footer-sub">© 2024 — جميع الحقوق محفوظة</div>
+  </div>
+</div>
+
+<!-- ══════════ ADMIN ══════════ -->
+<div class="admin-overlay" id="admin-overlay">
+  <div class="pw-screen" id="pw-screen">
+    <div class="pw-box">
+      <div class="pw-logo">VINTAKIT</div>
+      <div class="pw-sub" id="pw-sub">لوحة تحكم الأدمين</div>
+      <input class="pw-inp" type="email" id="pw-email" placeholder="you@example.com"
+             style="margin-bottom:10px"
+             onkeydown="if(event.key==='Enter')checkPw()">
+      <input class="pw-inp" type="password" id="pw-inp" placeholder="••••••••"
+             onkeydown="if(event.key==='Enter')checkPw()">
+      <button class="pw-submit" id="pw-btn" onclick="checkPw()">دخول</button>
+      <div class="pw-err" id="pw-err"></div>
+    </div>
+  </div>
+
+  <div class="adm-panel" id="adm-panel" style="display:none">
+    <div class="adm-nav">
+      <span class="adm-nav-logo">ADMIN PANEL</span>
+      <div style="display:flex;gap:8px">
+        <button class="adm-close" style="background:rgba(242,165,0,.15);color:var(--gold);border-color:rgba(242,165,0,.3)" onclick="window.open('editor.html','_blank')">🎨 محرر الواجهة</button>
+        <button class="adm-close" style="background:rgba(217,48,48,.12);color:var(--red)" onclick="adminLogout()">🚪 خروج</button>
+        <button class="adm-close" id="adm-close-btn" onclick="closeAdmin()">✕ إغلاق</button>
+      </div>
+    </div>
+    <div class="adm-body">
+
+      <div class="stats-row">
+        <div class="stat-c"><div class="stat-n" id="st-total" style="color:var(--royal)">0</div><div class="stat-l" id="st-l1">المنتجات</div></div>
+        <div class="stat-c"><div class="stat-n" id="st-avail" style="color:var(--green)">0</div><div class="stat-l" id="st-l2">متاح</div></div>
+        <div class="stat-c"><div class="stat-n" id="st-sold" style="color:var(--red)">0</div><div class="stat-l" id="st-l3">نفد</div></div>
+      </div>
+
+      <!-- WhatsApp -->
+      <div class="adm-sec">
+        <div class="adm-sec-title" id="adm-wa-title">رقم الواتساب</div>
+        <div class="wa-row">
+          <input class="adm-input" type="text" id="wa-inp" placeholder="212600000000">
+          <button class="adm-btn-green" id="wa-save-btn" onclick="saveWa()">حفظ</button>
+        </div>
+      </div>
+
+      <!-- About editor -->
+      <div class="adm-sec">
+        <div class="adm-sec-title" id="adm-about-title">تعديل صفحة "من نحن"</div>
+        <div class="form-grid">
+          <textarea id="abt-ar" class="full" placeholder="النص بالعربية..."></textarea>
+          <textarea id="abt-en" class="full" placeholder="English text..."></textarea>
+          <button class="adm-btn-blue" id="abt-save-btn" onclick="saveAbout()">حفظ النص</button>
+        </div>
+      </div>
+
+      <!-- Add product -->
+      <div class="adm-sec">
+        <div class="adm-sec-title" id="adm-add-title">إضافة قميص جديد</div>
+        <div class="form-grid">
+          <input type="text" id="f-nar" placeholder="الاسم بالعربية *">
+          <input type="text" id="f-nen" placeholder="Name in English *">
+          <input type="text" id="f-car" placeholder="المنتخب (عربي) *">
+          <input type="text" id="f-cen" placeholder="Country (English) *">
+          <input type="text" id="f-flag" placeholder="علم 🇲🇦 (emoji) *">
+          <input type="number" id="f-price" placeholder="السعر (درهم) *">
+          <select id="f-region" class="full">
+            <option value="africa">إفريقيا / Africa</option>
+            <option value="europe">أوروبا / Europe</option>
+            <option value="america">أمريكا / America</option>
+            <option value="asia">آسيا / Asia</option>
+          </select>
+          <div class="full img-upload-area" id="upload-area">
+            <div class="upload-label" id="upload-label">📸 اضغط أو اسحب لرفع الصور (حتى 3 صور)</div>
+            <input type="file" id="f-imgs" accept="image/*" multiple style="display:none" onchange="handleImgUpload(this)">
+            <div class="img-previews" id="img-previews"></div>
+          </div>
+          <button class="adm-btn-blue" id="adm-add-btn" onclick="addProduct()">+ إضافة القميص</button>
+        </div>
+      </div>
+
+      <!-- Product list -->
+      <div class="adm-sec">
+        <div class="adm-sec-title" id="adm-list-title">إدارة القمصان</div>
+        <div id="adm-list"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="edit-modal-overlay" id="edit-modal-overlay">
+  <div class="edit-modal">
+    <div class="edit-modal-title">
+      <span id="edit-modal-title-txt">تعديل القميص</span>
+      <button class="btn-cancel-edit" onclick="closeEdit()" style="padding:4px 12px;font-size:12px">✕</button>
+    </div>
+    <div class="edit-form-grid">
+      <input type="text" id="e-nar" placeholder="الاسم بالعربية">
+      <input type="text" id="e-nen" placeholder="Name in English">
+      <input type="text" id="e-car" placeholder="المنتخب عربي">
+      <input type="text" id="e-cen" placeholder="Country English">
+      <input type="text" id="e-flag" placeholder="علم 🇲🇦">
+      <input type="number" id="e-price" placeholder="السعر (درهم)">
+      <select id="e-region" class="full">
+        <option value="africa">إفريقيا / Africa</option>
+        <option value="europe">أوروبا / Europe</option>
+        <option value="america">أمريكا / America</option>
+        <option value="asia">آسيا / Asia</option>
+      </select>
+      <div class="edit-img-area full" onclick="document.getElementById('e-imgs').click()">
+        <div style="color:var(--text-mid);font-size:13px;font-weight:600" id="edit-upload-lbl">📸 اضغط لتغيير الصور (حتى 3)</div>
+        <input type="file" id="e-imgs" accept="image/*" multiple style="display:none" onchange="handleEditImgUpload(this)">
+        <div class="img-previews" id="edit-previews"></div>
+      </div>
+      <div class="edit-actions">
+        <button class="btn-save-edit" onclick="saveEdit()" id="save-edit-btn">حفظ التعديلات</button>
+        <button class="btn-cancel-edit" onclick="closeEdit()" id="cancel-edit-btn">إلغاء</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>
