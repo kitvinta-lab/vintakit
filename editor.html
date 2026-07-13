@@ -345,9 +345,28 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif}
     <div class="tab-content" id="tab-navbar">
       <div class="sec-lbl">الشعار</div>
       <div class="field">
-        <label class="field-label">اسم المتجر</label>
-        <input type="text" id="n-storename" value="VINTAKIT" oninput="liveText('nav-logo',this.value);liveText('footer-logo',this.value)">
+        <label class="field-label">اسم المتجر (نص، يُستعمل إذا مافيش صورة شعار)</label>
+        <input type="text" id="n-storename" value="VINTAKIT" oninput="liveText('.nav-logo',this.value);liveText('.footer-logo',this.value)">
       </div>
+      <div class="field">
+        <div class="img-upload" onclick="document.getElementById('n-logo-file').click()">
+          <div class="img-upload-lbl">🖼 اضغط لرفع صورة الشعار</div>
+          <input type="file" id="n-logo-file" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+          <img id="n-logo-preview" class="img-preview">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">أو رابط صورة الشعار</label>
+        <input type="text" id="n-logo-url" placeholder="https://..." oninput="applyLogo(this.value)">
+      </div>
+      <div class="field" id="n-logo-size-field" style="display:none">
+        <label class="field-label" id="n-logo-size-hint">حجم الشعار — 🖥 الحاسوب</label>
+        <div class="range-wrap">
+          <input type="range" id="n-logo-size" min="18" max="60" value="32" oninput="liveLogoSize(this.value)">
+          <span class="range-val" id="n-logo-size-val">32px</span>
+        </div>
+      </div>
+      <button class="add-card-btn" id="n-logo-remove-btn" style="display:none" onclick="removeLogo()">🗑 إزالة الشعار (رجوع للاسم النصي)</button>
 
       <div class="sec-lbl">الروابط</div>
       <div class="field">
@@ -408,6 +427,26 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif}
       <div class="field">
         <label class="field-label">نص الزر — عربي</label>
         <input type="text" id="h-cta-ar" value="تسوق الآن" oninput="liveFrameEl('#h-cta',this.value)">
+      </div>
+
+      <div class="sec-lbl">إحصائيات الهيرو (تحت العنوان)</div>
+      <div class="field">
+        <label class="field-label">تسمية الإحصائية 1 — افتراضي: قميص</label>
+        <input type="text" id="hs1-ar" placeholder="قميص" oninput="liveText('#hs-lbl1',this.value)">
+      </div>
+      <div class="field">
+        <label class="field-label">تسمية الإحصائية 2 — افتراضي: منتخب</label>
+        <input type="text" id="hs2-ar" placeholder="منتخب" oninput="liveText('#hs-lbl2',this.value)">
+      </div>
+      <div class="field-row">
+        <div class="field" style="max-width:90px">
+          <label class="field-label">أيقونة 3</label>
+          <input type="text" id="hs3-icon" placeholder="🇲🇦" maxlength="4" style="text-align:center" oninput="liveText('#hs-icon3',this.value)">
+        </div>
+        <div class="field">
+          <label class="field-label">تسمية 3 — افتراضي: الأسود</label>
+          <input type="text" id="hs3-ar" placeholder="الأسود" oninput="liveText('#hs-lbl3',this.value)">
+        </div>
       </div>
 
       <div class="sec-lbl">صورة الخلفية</div>
@@ -505,6 +544,34 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif}
           <span class="range-val">175px</span>
         </div>
       </div>
+
+      <div class="sec-lbl">تكبير وتموقع صور القمصان</div>
+      <div style="font-size:11px;color:var(--text-light);margin:-4px 0 10px;line-height:1.6">يشمل صور البطاقات وصورة صفحة القميص معاً. المعاينة الحية على اليمين تُظهر النتيجة مباشرة.</div>
+      <div style="font-size:11px;color:var(--text-light);margin:-4px 0 10px;line-height:1.6" id="prodimg-device-hint">📍 كتعدّلي دابا نسخة: <b>🖥 الحاسوب</b> — بدّلي الجهاز من الأعلى (📲) للتحكم في نسخة الهاتف بشكل منفصل</div>
+      <div class="field">
+        <label class="field-label">التكبير / التصغير (Zoom)</label>
+        <div class="range-wrap">
+          <input type="range" id="pi-zoom" min="100" max="200" value="100" oninput="livePiZoom(this.value)">
+          <span class="range-val" id="pi-zoom-val">100%</span>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">الموضع الأفقي</label>
+          <div class="range-wrap">
+            <input type="range" id="pi-posx" min="0" max="100" value="50" oninput="livePiPos()">
+            <span class="range-val" id="pi-posx-val">50%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">الموضع العمودي</label>
+          <div class="range-wrap">
+            <input type="range" id="pi-posy" min="0" max="100" value="50" oninput="livePiPos()">
+            <span class="range-val" id="pi-posy-val">50%</span>
+          </div>
+        </div>
+      </div>
+
       <div class="field">
         <label class="field-label">حجم اسم القميص</label>
         <div class="range-wrap">
@@ -799,6 +866,8 @@ function setDevice(d){
   wrap.className = 'preview-frame-wrap ' + (d==='desktop'?'':d);
   currentDevice = d;
   refreshHeroBgControlsForDevice();
+  refreshLogoSizeForDevice();
+  refreshPiControlsForDevice();
 }
 
 function isMobileEdit(){ return currentDevice === 'mobile'; }
@@ -1010,6 +1079,131 @@ function updateHeroBgLive(){
   }catch(e){}
 }
 
+// ── LOGO (image, replaces text store name) ──
+function handleLogoUpload(input){
+  var file = input.files[0]; if(!file) return;
+  var r = new FileReader();
+  r.onload = function(e){
+    document.getElementById('n-logo-preview').src = e.target.result;
+    document.getElementById('n-logo-preview').classList.add('show');
+    document.getElementById('n-logo-url').value = '';
+    applyLogo(e.target.result);
+  };
+  r.readAsDataURL(file);
+}
+function applyLogo(src){
+  if(!src) return;
+  currentTheme.logoUrl = src;
+  document.getElementById('n-logo-size-field').style.display = 'block';
+  document.getElementById('n-logo-remove-btn').style.display = 'block';
+  updateLogoLive();
+}
+function removeLogo(){
+  currentTheme.logoUrl = '';
+  document.getElementById('n-logo-url').value = '';
+  document.getElementById('n-logo-preview').classList.remove('show');
+  document.getElementById('n-logo-size-field').style.display = 'none';
+  document.getElementById('n-logo-remove-btn').style.display = 'none';
+  try{
+    var doc2 = fd();
+    var sn = document.getElementById('n-storename').value || 'VINTAKIT';
+    doc2.querySelectorAll('.nav-logo, .footer-logo').forEach(function(el){ el.textContent = sn; });
+    var st = doc2.getElementById('vk-logo-style');
+    if(st) st.remove();
+  }catch(e){}
+}
+function liveLogoSize(val){
+  val = parseInt(val);
+  if(isMobileEdit()) currentTheme.logoMaxHeightMobile = val;
+  else currentTheme.logoMaxHeight = val;
+  document.getElementById('n-logo-size-val').textContent = val + 'px';
+  updateLogoLive();
+}
+function updateLogoLive(){
+  try{
+    var doc2 = fd();
+    if(!currentTheme.logoUrl) return;
+    doc2.querySelectorAll('.nav-logo, .footer-logo').forEach(function(el){
+      el.innerHTML = '<img src="'+currentTheme.logoUrl+'" alt="logo" class="vk-logo-img" style="max-width:140px;object-fit:contain;vertical-align:middle">';
+    });
+    var st = doc2.getElementById('vk-logo-style');
+    if(!st){ st = doc2.createElement('style'); st.id = 'vk-logo-style'; doc2.head.appendChild(st); }
+    var d = currentTheme.logoMaxHeight || 32;
+    var m = currentTheme.logoMaxHeightMobile !== undefined ? currentTheme.logoMaxHeightMobile : d;
+    st.textContent = '.vk-logo-img{height:'+d+'px;}@media (max-width:640px){.vk-logo-img{height:'+m+'px;}}';
+  }catch(e){}
+}
+function refreshLogoSizeForDevice(){
+  var hint = document.getElementById('n-logo-size-hint');
+  if(hint) hint.textContent = 'حجم الشعار — ' + (isMobileEdit() ? '📲 الهاتف' : '🖥 الحاسوب');
+  var el = document.getElementById('n-logo-size');
+  if(!el) return;
+  var val = isMobileEdit()
+    ? (currentTheme.logoMaxHeightMobile !== undefined ? currentTheme.logoMaxHeightMobile : (currentTheme.logoMaxHeight||32))
+    : (currentTheme.logoMaxHeight || 32);
+  el.value = val;
+  document.getElementById('n-logo-size-val').textContent = val + 'px';
+}
+
+// ── PRODUCT IMAGE ZOOM / POSITION (cards + product page) ──
+// Same desktop/mobile-independent pattern as the hero background.
+function livePiZoom(val){
+  val = parseInt(val);
+  document.getElementById('pi-zoom-val').textContent = val + '%';
+  if(isMobileEdit()) currentTheme.prodImgZoomMobile = val;
+  else currentTheme.prodImgZoom = val;
+  updatePiLive();
+}
+function livePiPos(){
+  var x = parseInt(document.getElementById('pi-posx').value);
+  var y = parseInt(document.getElementById('pi-posy').value);
+  document.getElementById('pi-posx-val').textContent = x + '%';
+  document.getElementById('pi-posy-val').textContent = y + '%';
+  if(isMobileEdit()){ currentTheme.prodImgPosXMobile = x; currentTheme.prodImgPosYMobile = y; }
+  else { currentTheme.prodImgPosX = x; currentTheme.prodImgPosY = y; }
+  updatePiLive();
+}
+function buildProdImgCssEditor(){
+  var dZoom = (currentTheme.prodImgZoom || 100) / 100;
+  var dX = currentTheme.prodImgPosX !== undefined ? currentTheme.prodImgPosX : 50;
+  var dY = currentTheme.prodImgPosY !== undefined ? currentTheme.prodImgPosY : 50;
+  var mZoom = (currentTheme.prodImgZoomMobile !== undefined ? currentTheme.prodImgZoomMobile : (currentTheme.prodImgZoom||100)) / 100;
+  var mX = currentTheme.prodImgPosXMobile !== undefined ? currentTheme.prodImgPosXMobile : dX;
+  var mY = currentTheme.prodImgPosYMobile !== undefined ? currentTheme.prodImgPosYMobile : dY;
+  function rule(zoom, x, y){
+    return ':root{--vk-card-zoom:'+zoom+';--vk-card-pos:'+x+'% '+y+'%;--vk-prod-zoom:'+zoom+';--vk-prod-pos:'+x+'% '+y+'%;}';
+  }
+  return rule(dZoom, dX, dY) + '@media (max-width:640px){' + rule(mZoom, mX, mY) + '}';
+}
+function updatePiLive(){
+  try{
+    var doc2 = fd();
+    var st = doc2.getElementById('vk-prodimg-style');
+    if(!st){ st = doc2.createElement('style'); st.id = 'vk-prodimg-style'; doc2.head.appendChild(st); }
+    st.textContent = buildProdImgCssEditor();
+  }catch(e){}
+}
+function refreshPiControlsForDevice(){
+  var hint = document.getElementById('prodimg-device-hint');
+  if(hint){
+    hint.innerHTML = isMobileEdit()
+      ? '📍 كتعدّلي دابا نسخة: <b>📲 الهاتف</b> — مستقلة تماماً عن نسخة الحاسوب'
+      : '📍 كتعدّلي دابا نسخة: <b>🖥 الحاسوب</b> — بدّلي الجهاز من الأعلى (📲) للتحكم في نسخة الهاتف بشكل منفصل';
+  }
+  var zoom = isMobileEdit()
+    ? (currentTheme.prodImgZoomMobile !== undefined ? currentTheme.prodImgZoomMobile : (currentTheme.prodImgZoom||100))
+    : (currentTheme.prodImgZoom || 100);
+  var x = isMobileEdit()
+    ? (currentTheme.prodImgPosXMobile !== undefined ? currentTheme.prodImgPosXMobile : (currentTheme.prodImgPosX!==undefined?currentTheme.prodImgPosX:50))
+    : (currentTheme.prodImgPosX !== undefined ? currentTheme.prodImgPosX : 50);
+  var y = isMobileEdit()
+    ? (currentTheme.prodImgPosYMobile !== undefined ? currentTheme.prodImgPosYMobile : (currentTheme.prodImgPosY!==undefined?currentTheme.prodImgPosY:50))
+    : (currentTheme.prodImgPosY !== undefined ? currentTheme.prodImgPosY : 50);
+  var zEl = document.getElementById('pi-zoom'); if(zEl){ zEl.value = zoom; document.getElementById('pi-zoom-val').textContent = zoom+'%'; }
+  var xEl = document.getElementById('pi-posx'); if(xEl){ xEl.value = x; document.getElementById('pi-posx-val').textContent = x+'%'; }
+  var yEl = document.getElementById('pi-posy'); if(yEl){ yEl.value = y; document.getElementById('pi-posy-val').textContent = y+'%'; }
+}
+
 // ── ABOUT IMG ──
 function handleAboutImg(input){
   var file = input.files[0]; if(!file) return;
@@ -1196,6 +1390,19 @@ function collectTheme(){
     heroOverlayOn:      document.getElementById('h-bg-overlay-on').checked,
     heroOverlayColor:   document.getElementById('h-bg-overlay-color').value,
     heroOverlayOpacity: parseInt(document.getElementById('h-bg-overlay-opacity').value)||40,
+    heroStat1LabelAr: document.getElementById('hs1-ar').value,
+    heroStat2LabelAr: document.getElementById('hs2-ar').value,
+    heroStat3Icon:    document.getElementById('hs3-icon').value,
+    heroStat3LabelAr: document.getElementById('hs3-ar').value,
+    logoUrl:      currentTheme.logoUrl || '',
+    logoMaxHeight:       currentTheme.logoMaxHeight || 32,
+    logoMaxHeightMobile: currentTheme.logoMaxHeightMobile !== undefined ? currentTheme.logoMaxHeightMobile : (currentTheme.logoMaxHeight || 32),
+    prodImgZoom: currentTheme.prodImgZoom || 100,
+    prodImgPosX: currentTheme.prodImgPosX !== undefined ? currentTheme.prodImgPosX : 50,
+    prodImgPosY: currentTheme.prodImgPosY !== undefined ? currentTheme.prodImgPosY : 50,
+    prodImgZoomMobile: currentTheme.prodImgZoomMobile !== undefined ? currentTheme.prodImgZoomMobile : (currentTheme.prodImgZoom || 100),
+    prodImgPosXMobile: currentTheme.prodImgPosXMobile !== undefined ? currentTheme.prodImgPosXMobile : (currentTheme.prodImgPosX !== undefined ? currentTheme.prodImgPosX : 50),
+    prodImgPosYMobile: currentTheme.prodImgPosYMobile !== undefined ? currentTheme.prodImgPosYMobile : (currentTheme.prodImgPosY !== undefined ? currentTheme.prodImgPosY : 50),
     footerCopyAr:document.getElementById('ft-copy-ar').value,
     aboutTitleAr:document.getElementById('ab-title-ar').value,
     aboutSubAr:  document.getElementById('ab-sub-ar').value,
@@ -1268,6 +1475,33 @@ function loadSavedTheme(){
   }
   if(saved.heroBg) currentTheme.heroBg = saved.heroBg;
   updateHeroBgLive();
+
+  if(saved.heroStat1LabelAr){ document.getElementById('hs1-ar').value = saved.heroStat1LabelAr; liveText('#hs-lbl1', saved.heroStat1LabelAr); }
+  if(saved.heroStat2LabelAr){ document.getElementById('hs2-ar').value = saved.heroStat2LabelAr; liveText('#hs-lbl2', saved.heroStat2LabelAr); }
+  if(saved.heroStat3Icon){ document.getElementById('hs3-icon').value = saved.heroStat3Icon; liveText('#hs-icon3', saved.heroStat3Icon); }
+  if(saved.heroStat3LabelAr){ document.getElementById('hs3-ar').value = saved.heroStat3LabelAr; liveText('#hs-lbl3', saved.heroStat3LabelAr); }
+
+  if(saved.logoMaxHeight) currentTheme.logoMaxHeight = saved.logoMaxHeight;
+  if(saved.logoMaxHeightMobile!==undefined) currentTheme.logoMaxHeightMobile = saved.logoMaxHeightMobile;
+  if(saved.logoUrl){
+    currentTheme.logoUrl = saved.logoUrl;
+    document.getElementById('n-logo-url').value = saved.logoUrl;
+    document.getElementById('n-logo-preview').src = saved.logoUrl;
+    document.getElementById('n-logo-preview').classList.add('show');
+    document.getElementById('n-logo-size-field').style.display = 'block';
+    document.getElementById('n-logo-remove-btn').style.display = 'block';
+    updateLogoLive();
+  }
+  refreshLogoSizeForDevice();
+
+  if(saved.prodImgZoom) currentTheme.prodImgZoom = saved.prodImgZoom;
+  if(saved.prodImgPosX!==undefined) currentTheme.prodImgPosX = saved.prodImgPosX;
+  if(saved.prodImgPosY!==undefined) currentTheme.prodImgPosY = saved.prodImgPosY;
+  if(saved.prodImgZoomMobile!==undefined) currentTheme.prodImgZoomMobile = saved.prodImgZoomMobile;
+  if(saved.prodImgPosXMobile!==undefined) currentTheme.prodImgPosXMobile = saved.prodImgPosXMobile;
+  if(saved.prodImgPosYMobile!==undefined) currentTheme.prodImgPosYMobile = saved.prodImgPosYMobile;
+  refreshPiControlsForDevice();
+  updatePiLive();
 }
 
 function resetAll(){

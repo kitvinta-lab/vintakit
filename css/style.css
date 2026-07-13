@@ -1,5 +1,7 @@
 /* ─── TOKENS ─── */
 :root {
+  --vk-card-zoom: 1; --vk-card-pos: 50% 50%;
+  --vk-prod-zoom: 1; --vk-prod-pos: 50% 50%;
   --royal:       #1B3F8B;
   --royal-deep:  #0D2359;
   --royal-mid:   #254BAD;
@@ -155,9 +157,11 @@ button { cursor: pointer; font-family: 'Cairo', sans-serif; }
 }
 .card-img-wrap img {
   width: 100%; height: 100%; object-fit: cover;
+  object-position: var(--vk-card-pos);
+  transform: scale(var(--vk-card-zoom));
   transition: transform .35s;
 }
-.card:hover .card-img-wrap img { transform: scale(1.06); }
+.card:hover .card-img-wrap img { transform: scale(calc(var(--vk-card-zoom) * 1.06)); }
 .card-placeholder {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
@@ -216,13 +220,15 @@ button { cursor: pointer; font-family: 'Cairo', sans-serif; }
 }
 .prod-main-img {
   width: 100%; aspect-ratio: 4/3; object-fit: contain;
+  object-position: var(--vk-prod-pos);
   background: var(--off-white);
   border-radius: 14px; border: 1.5px solid var(--border);
   margin-bottom: 10px;
+  transform: scale(var(--vk-prod-zoom));
   transition: transform .4s ease;
 }
 #prod-img-main:hover .prod-main-img {
-  transform: scale(1.18);
+  transform: scale(calc(var(--vk-prod-zoom) * 1.18));
 }
 .prod-placeholder {
   width: 100%; aspect-ratio: 4/3; border-radius: 14px;
@@ -331,6 +337,7 @@ button { cursor: pointer; font-family: 'Cairo', sans-serif; }
   display: flex; align-items: center; justify-content: center;
 }
 .pw-box {
+  position: relative;
   background: #fff; border-radius: 18px; padding: 40px 32px;
   width: 310px; text-align: center; border-top: 4px solid var(--gold);
   box-shadow: var(--shadow-lg);

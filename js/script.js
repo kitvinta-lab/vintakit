@@ -273,6 +273,11 @@ function toggleLang(){
   lang = lang === 'ar' ? 'en' : 'ar';
   localStorage.setItem('vk-lang', lang);
   applyLang();
+  // applyLang() resets hero/stat text to hard-coded defaults; re-apply
+  // the saved theme right after so any customizations (title, badge,
+  // stats labels...) aren't lost when switching language.
+  var saved = JSON.parse(localStorage.getItem('vk-theme') || 'null');
+  if(saved) applyThemeToDOM(Object.assign({}, DEFAULT_THEME, saved));
 }
 
 // ─── PAGES ───
@@ -608,6 +613,15 @@ function openAdmin(){
 
 function closeAdmin(){ document.getElementById('admin-overlay').classList.remove('open'); }
 
+// Cancel button on the login screen — for when someone opens the admin
+// gear icon by mistake and just wants to back out cleanly.
+function cancelAdminLogin(){
+  document.getElementById('pw-email').value = '';
+  document.getElementById('pw-inp').value = '';
+  document.getElementById('pw-err').textContent = '';
+  closeAdmin();
+}
+
 function showAdminPanel(){
   document.getElementById('pw-screen').style.display = 'none';
   document.getElementById('adm-panel').style.display = 'block';
@@ -616,9 +630,6 @@ function showAdminPanel(){
   document.getElementById('abt-en').value = aboutTexts.en || '';
   renderRegionOptions();
   renderSuggestPicker('f-suggest-picker', pendingSuggestIds, null);
-  // populate theme inputs from saved theme
-  var saved = JSON.parse(localStorage.getItem('vk-theme') || 'null') || DEFAULT_THEME;
-  populateThemeInputs(saved);
   updateStats(); renderAdmList();
 }
 
@@ -801,7 +812,15 @@ var DEFAULT_THEME = {
   heroBgPosY:         50,
   heroOverlayOn:      false,
   heroOverlayColor:  '#0D2359',
-  heroOverlayOpacity: 40
+  heroOverlayOpacity: 40,
+  logoUrl: '',
+  logoMaxHeight:       32,
+  logoMaxHeightMobile: 26,
+  heroStat1LabelAr: '', heroStat1LabelEn: '',
+  heroStat2LabelAr: '', heroStat2LabelEn: '',
+  heroStat3Icon: '', heroStat3LabelAr: '', heroStat3LabelEn: '',
+  prodImgZoom: 100, prodImgPosX: 50, prodImgPosY: 50,
+  prodImgZoomMobile: 100, prodImgPosXMobile: 50, prodImgPosYMobile: 50
 };
 
 function loadTheme(){
@@ -855,13 +874,36 @@ function applyThemeToDOM(theme){
   var heroTitle = document.querySelector('.hero-title');
   if(heroTitle) heroTitle.innerHTML = hb1 + ' <em>' + hb2 + '</em>';
 
-  // store name (nav + footer)
+  // store name (nav + footer) — or a custom logo image if one is set.
+  // pw-logo / adm-nav-logo (admin-only screens) always stay text-based.
   var sn = theme.storeName;
-  if(sn){
-    document.querySelectorAll('.nav-logo, .footer-logo, .pw-logo, .adm-nav-logo').forEach(function(el){
-      if(el.classList.contains('adm-nav-logo')) el.textContent = sn + ' ADMIN';
-      else el.textContent = sn;
+  if(theme.logoUrl){
+    document.querySelectorAll('.nav-logo, .footer-logo').forEach(function(el){
+      el.innerHTML = '<img src="'+theme.logoUrl+'" alt="logo" class="vk-logo-img" style="max-width:140px;object-fit:contain;vertical-align:middle">';
     });
+  } else if(sn){
+    document.querySelectorAll('.nav-logo, .footer-logo').forEach(function(el){ el.textContent = sn; });
+  }
+  if(sn){
+    var pwLogo = document.querySelector('.pw-logo');
+    if(pwLogo) pwLogo.textContent = sn;
+    var admLogo = document.querySelector('.adm-nav-logo');
+    if(admLogo) admLogo.textContent = sn + ' ADMIN';
+  }
+  // logo height — desktop/mobile independent, via injected <style>
+  // (a plain img height attribute can't respond to @media on its own).
+  var logoStyleTag = document.getElementById('vk-logo-style');
+  if(theme.logoUrl){
+    if(!logoStyleTag){
+      logoStyleTag = document.createElement('style');
+      logoStyleTag.id = 'vk-logo-style';
+      document.head.appendChild(logoStyleTag);
+    }
+    logoStyleTag.textContent =
+      '.vk-logo-img{height:'+(theme.logoMaxHeight||32)+'px;}' +
+      '@media (max-width:640px){.vk-logo-img{height:'+(theme.logoMaxHeightMobile||26)+'px;}}';
+  } else if(logoStyleTag){
+    logoStyleTag.remove();
   }
 
   // hero sub / eyebrow / cta — live update
@@ -876,6 +918,25 @@ function applyThemeToDOM(theme){
   }
   if(hCta && (theme.heroCtaAr || theme.heroCtaEn)){
     hCta.textContent = isAr ? (theme.heroCtaAr||theme.heroCtaEn) : (theme.heroCtaEn||theme.heroCtaAr);
+  }
+
+  // hero stats labels + third-stat icon — fully customizable so this
+  // isn't locked to "shirts / nations / 🇲🇦 Atlas Lions" for every store.
+  var hsLbl1 = document.getElementById('hs-lbl1');
+  var hsLbl2 = document.getElementById('hs-lbl2');
+  var hsLbl3 = document.getElementById('hs-lbl3');
+  var hsIcon3 = document.getElementById('hs-icon3');
+  if(hsLbl1 && (theme.heroStat1LabelAr || theme.heroStat1LabelEn)){
+    hsLbl1.textContent = isAr ? (theme.heroStat1LabelAr||theme.heroStat1LabelEn) : (theme.heroStat1LabelEn||theme.heroStat1LabelAr);
+  }
+  if(hsLbl2 && (theme.heroStat2LabelAr || theme.heroStat2LabelEn)){
+    hsLbl2.textContent = isAr ? (theme.heroStat2LabelAr||theme.heroStat2LabelEn) : (theme.heroStat2LabelEn||theme.heroStat2LabelAr);
+  }
+  if(hsLbl3 && (theme.heroStat3LabelAr || theme.heroStat3LabelEn)){
+    hsLbl3.textContent = isAr ? (theme.heroStat3LabelAr||theme.heroStat3LabelEn) : (theme.heroStat3LabelEn||theme.heroStat3LabelAr);
+  }
+  if(hsIcon3 && theme.heroStat3Icon){
+    hsIcon3.textContent = theme.heroStat3Icon;
   }
 
   // hero background image — zoom, position & darkening overlay
@@ -907,6 +968,33 @@ function applyThemeToDOM(theme){
     var oldOverlay = document.getElementById('vk-hero-overlay');
     if(oldOverlay) oldOverlay.remove();
   }
+
+  // product images (card thumbnails + product-page main image) — zoom
+  // & pan, desktop/mobile independent, via CSS custom properties so the
+  // existing hover-zoom effects (scale 1.06 / 1.18) keep working on top.
+  var prodImgStyleTag = document.getElementById('vk-prodimg-style');
+  if(!prodImgStyleTag){
+    prodImgStyleTag = document.createElement('style');
+    prodImgStyleTag.id = 'vk-prodimg-style';
+    document.head.appendChild(prodImgStyleTag);
+  }
+  prodImgStyleTag.textContent = buildProdImgCss(theme);
+}
+
+// Builds the :root custom-property CSS that drives product image
+// zoom/position (desktop rule + a mobile override under
+// @media max-width:640px). See buildProdImgCssEditor() in editor.html.
+function buildProdImgCss(theme){
+  var dZoom = (theme.prodImgZoom || 100) / 100;
+  var dX = theme.prodImgPosX !== undefined ? theme.prodImgPosX : 50;
+  var dY = theme.prodImgPosY !== undefined ? theme.prodImgPosY : 50;
+  var mZoom = (theme.prodImgZoomMobile !== undefined ? theme.prodImgZoomMobile : (theme.prodImgZoom||100)) / 100;
+  var mX = theme.prodImgPosXMobile !== undefined ? theme.prodImgPosXMobile : dX;
+  var mY = theme.prodImgPosYMobile !== undefined ? theme.prodImgPosYMobile : dY;
+  function rule(zoom, x, y){
+    return ':root{--vk-card-zoom:'+zoom+';--vk-card-pos:'+x+'% '+y+'%;--vk-prod-zoom:'+zoom+';--vk-prod-pos:'+x+'% '+y+'%;}';
+  }
+  return rule(dZoom, dX, dY) + '@media (max-width:640px){' + rule(mZoom, mX, mY) + '}';
 }
 
 // Builds the .hero background-image/size/position CSS (desktop rule +

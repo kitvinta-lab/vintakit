@@ -33,7 +33,7 @@
     <div class="hero-stats">
       <div><div class="hero-stat-num" id="hs-count">0</div><div class="hero-stat-lbl" id="hs-lbl1">قميص</div></div>
       <div><div class="hero-stat-num" id="hs-nations">0</div><div class="hero-stat-lbl" id="hs-lbl2">منتخب</div></div>
-      <div><div class="hero-stat-num">🇲🇦</div><div class="hero-stat-lbl" id="hs-lbl3">الأسود</div></div>
+      <div><div class="hero-stat-num" id="hs-icon3">🇲🇦</div><div class="hero-stat-lbl" id="hs-lbl3">الأسود</div></div>
     </div>
   </div>
 
@@ -116,6 +116,7 @@
 <div class="admin-overlay" id="admin-overlay">
   <div class="pw-screen" id="pw-screen">
     <div class="pw-box">
+      <button onclick="cancelAdminLogin()" title="إلغاء والرجوع" style="position:absolute;top:12px;left:12px;background:var(--off-white);border:1px solid var(--border);color:var(--text-mid);font-size:13px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:4px">✕ إلغاء</button>
       <div class="pw-logo">VINTAKIT</div>
       <div class="pw-sub" id="pw-sub">لوحة تحكم الأدمين</div>
       <input class="pw-inp" type="email" id="pw-email" placeholder="you@example.com"
