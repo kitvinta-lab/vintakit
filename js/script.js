@@ -825,37 +825,62 @@ function applyThemeToDOM(theme){
   }
 
   // hero background image — zoom, position & darkening overlay
-  // (overlay is combined into the SAME background-image as a gradient
-  // layer, not a separate div, so it always renders correctly beneath
-  // the hero content — a stacked <div> with z-index would fight the
-  // .hero stacking context and end up hidden behind the image).
+  // Desktop & mobile use INDEPENDENT zoom/position values (falling back
+  // to the desktop value if no mobile-specific one was set), applied via
+  // an injected <style> with @media(max-width:640px) — matching the
+  // breakpoint already used elsewhere on the site. This can't be done
+  // with inline styles (no media queries), and inline styles must stay
+  // cleared or they'd override the stylesheet rule regardless of width.
   var heroEl = document.querySelector('.hero');
   if(heroEl){
-    var layers = [], sizes = [], positions = [];
-    if(theme.heroOverlayOn){
-      var rgba = hexToRgba(theme.heroOverlayColor || '#0D2359', (theme.heroOverlayOpacity!==undefined?theme.heroOverlayOpacity:40)/100);
-      layers.push('linear-gradient('+rgba+','+rgba+')');
-      sizes.push('cover');
-      positions.push('center');
+    heroEl.style.backgroundImage = '';
+    heroEl.style.backgroundSize = '';
+    heroEl.style.backgroundPosition = '';
+
+    var css = buildHeroBgCss(theme);
+    var styleTag = document.getElementById('vk-hero-bg-style');
+    if(css){
+      if(!styleTag){
+        styleTag = document.createElement('style');
+        styleTag.id = 'vk-hero-bg-style';
+        document.head.appendChild(styleTag);
+      }
+      styleTag.textContent = css;
+    } else if(styleTag){
+      styleTag.remove();
     }
-    if(theme.heroBg){
-      var px = theme.heroBgPosX !== undefined ? theme.heroBgPosX : 50;
-      var py = theme.heroBgPosY !== undefined ? theme.heroBgPosY : 50;
-      layers.push('url("'+theme.heroBg+'")');
-      sizes.push((theme.heroBgZoom || 100) + '%');
-      positions.push(px + '% ' + py + '%');
-    }
-    if(layers.length){
-      heroEl.style.backgroundImage = layers.join(', ');
-      heroEl.style.backgroundSize = sizes.join(', ');
-      heroEl.style.backgroundPosition = positions.join(', ');
-    } else {
-      heroEl.style.backgroundImage = '';
-    }
-    // clean up any leftover overlay <div> from the older implementation
+    // clean up any leftover overlay <div> from an older implementation
     var oldOverlay = document.getElementById('vk-hero-overlay');
     if(oldOverlay) oldOverlay.remove();
   }
+}
+
+// Builds the .hero background-image/size/position CSS (desktop rule +
+// a mobile override under @media max-width:640px). Shared shape with
+// editor.html's buildHeroBgCssEditor() — keep both in sync if changed.
+function buildHeroBgCss(theme){
+  var overlayLayer = '';
+  if(theme.heroOverlayOn){
+    var rgba = hexToRgba(theme.heroOverlayColor || '#0D2359', (theme.heroOverlayOpacity!==undefined?theme.heroOverlayOpacity:40)/100);
+    overlayLayer = 'linear-gradient('+rgba+','+rgba+')';
+  }
+  var hasImg = !!theme.heroBg;
+  if(!overlayLayer && !hasImg) return '';
+
+  var dZoom = theme.heroBgZoom || 100;
+  var dX = theme.heroBgPosX !== undefined ? theme.heroBgPosX : 50;
+  var dY = theme.heroBgPosY !== undefined ? theme.heroBgPosY : 50;
+  var mZoom = theme.heroBgZoomMobile !== undefined ? theme.heroBgZoomMobile : dZoom;
+  var mX = theme.heroBgPosXMobile !== undefined ? theme.heroBgPosXMobile : dX;
+  var mY = theme.heroBgPosYMobile !== undefined ? theme.heroBgPosYMobile : dY;
+
+  function rule(zoom, x, y){
+    var layers = [], sizes = [], positions = [];
+    if(overlayLayer){ layers.push(overlayLayer); sizes.push('cover'); positions.push('center'); }
+    if(hasImg){ layers.push('url("'+theme.heroBg+'")'); sizes.push(zoom+'%'); positions.push(x+'% '+y+'%'); }
+    return '.hero{background-image:'+layers.join(', ')+';background-size:'+sizes.join(', ')+';background-position:'+positions.join(', ')+';}';
+  }
+  return rule(dZoom, dX, dY) + '@media (max-width:640px){' + rule(mZoom, mX, mY) + '}';
 }
 
 // Convert a hex color + alpha (0-1) into an rgba() string

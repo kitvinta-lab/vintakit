@@ -424,6 +424,7 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif}
       </div>
 
       <div class="sec-lbl">تكبير وتموقع الصورة</div>
+      <div style="font-size:11px;color:var(--text-light);margin:-4px 0 10px;line-height:1.6" id="hero-bg-device-hint">📍 كتعدّلي دابا نسخة: <b>🖥 الحاسوب</b> — بدّلي الجهاز من الأعلى (📲) للتحكم في نسخة الهاتف بشكل منفصل</div>
       <div class="field">
         <label class="field-label">التكبير / التصغير (Zoom)</label>
         <div class="range-wrap">
@@ -782,11 +783,44 @@ function switchTab(id){
 }
 
 // ── DEVICE ──
+// The selected device is also what the hero-background zoom/position
+// controls edit: pick "mobile" to adjust the phone-only variant
+// independently of desktop, since background-position % depends on the
+// container's aspect ratio and a single value can't look right on both.
+var currentDevice = 'desktop';
 function setDevice(d){
   document.querySelectorAll('.dev-btn').forEach(function(b){ b.classList.remove('active'); });
   document.getElementById('dev-'+d).classList.add('active');
   var wrap = document.getElementById('frame-wrap');
   wrap.className = 'preview-frame-wrap ' + (d==='desktop'?'':d);
+  currentDevice = d;
+  refreshHeroBgControlsForDevice();
+}
+
+function isMobileEdit(){ return currentDevice === 'mobile'; }
+
+function refreshHeroBgControlsForDevice(){
+  var hint = document.getElementById('hero-bg-device-hint');
+  if(hint){
+    hint.innerHTML = isMobileEdit()
+      ? '📍 كتعدّلي دابا نسخة: <b>📲 الهاتف</b> — مستقلة تماماً عن نسخة الحاسوب'
+      : '📍 كتعدّلي دابا نسخة: <b>🖥 الحاسوب</b> — بدّلي الجهاز من الأعلى (📲) للتحكم في نسخة الهاتف بشكل منفصل';
+  }
+  var zoom = isMobileEdit()
+    ? (currentTheme.heroBgZoomMobile !== undefined ? currentTheme.heroBgZoomMobile : (currentTheme.heroBgZoom||100))
+    : (currentTheme.heroBgZoom || 100);
+  var x = isMobileEdit()
+    ? (currentTheme.heroBgPosXMobile !== undefined ? currentTheme.heroBgPosXMobile : (currentTheme.heroBgPosX!==undefined?currentTheme.heroBgPosX:50))
+    : (currentTheme.heroBgPosX !== undefined ? currentTheme.heroBgPosX : 50);
+  var y = isMobileEdit()
+    ? (currentTheme.heroBgPosYMobile !== undefined ? currentTheme.heroBgPosYMobile : (currentTheme.heroBgPosY!==undefined?currentTheme.heroBgPosY:50))
+    : (currentTheme.heroBgPosY !== undefined ? currentTheme.heroBgPosY : 50);
+  document.getElementById('h-bg-zoom').value = zoom;
+  document.getElementById('h-bg-zoom-val').textContent = zoom + '%';
+  document.getElementById('h-bg-posx').value = x;
+  document.getElementById('h-bg-posx-val').textContent = x + '%';
+  document.getElementById('h-bg-posy').value = y;
+  document.getElementById('h-bg-posy-val').textContent = y + '%';
 }
 
 // ── LIVE COLOR ──
@@ -878,18 +912,29 @@ function applyHeroBg(src){
 }
 
 // ── HERO BG ZOOM / POSITION / OVERLAY ──
-// Overlay is combined into the same background-image as a gradient layer
-// (not a separate <div>), so it never gets hidden by stacking-context
-// quirks — matches exactly what applyThemeToDOM() does on the real site.
+// Zoom & position are stored as TWO independent variants (desktop /
+// mobile) because background-position % is relative to the container's
+// own aspect ratio — a value that looks right on a wide desktop hero
+// will crop differently on a narrow phone hero. Overlay color/opacity
+// don't have that problem, so they stay shared across both.
+// The variants are applied via an injected <style> with @media
+// (max-width:640px), exactly mirroring what applyThemeToDOM() does on
+// the real site — so switching the device preview above instantly
+// shows the correct variant.
 function liveHeroZoom(val){
+  val = parseInt(val);
   document.getElementById('h-bg-zoom-val').textContent = val + '%';
+  if(isMobileEdit()) currentTheme.heroBgZoomMobile = val;
+  else currentTheme.heroBgZoom = val;
   updateHeroBgLive();
 }
 function liveHeroPos(){
-  var x = document.getElementById('h-bg-posx').value;
-  var y = document.getElementById('h-bg-posy').value;
+  var x = parseInt(document.getElementById('h-bg-posx').value);
+  var y = parseInt(document.getElementById('h-bg-posy').value);
   document.getElementById('h-bg-posx-val').textContent = x + '%';
   document.getElementById('h-bg-posy-val').textContent = y + '%';
+  if(isMobileEdit()){ currentTheme.heroBgPosXMobile = x; currentTheme.heroBgPosYMobile = y; }
+  else { currentTheme.heroBgPosX = x; currentTheme.heroBgPosY = y; }
   updateHeroBgLive();
 }
 function liveHeroOverlay(){
@@ -903,38 +948,60 @@ function hexToRgba(hex, alpha){
   var r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
   return 'rgba('+r+','+g+','+b+','+alpha+')';
 }
+
+function buildHeroBgCssEditor(){
+  var overlayOn = document.getElementById('h-bg-overlay-on').checked;
+  var overlayColor = document.getElementById('h-bg-overlay-color').value;
+  var overlayOpacity = document.getElementById('h-bg-overlay-opacity').value;
+  var overlayLayer = '';
+  if(overlayOn){
+    var rgba = hexToRgba(overlayColor, overlayOpacity/100);
+    overlayLayer = 'linear-gradient('+rgba+','+rgba+')';
+  }
+  var hasImg = !!currentTheme.heroBg;
+  if(!overlayLayer && !hasImg) return '';
+
+  var dZoom = currentTheme.heroBgZoom || 100;
+  var dX = currentTheme.heroBgPosX !== undefined ? currentTheme.heroBgPosX : 50;
+  var dY = currentTheme.heroBgPosY !== undefined ? currentTheme.heroBgPosY : 50;
+  var mZoom = currentTheme.heroBgZoomMobile !== undefined ? currentTheme.heroBgZoomMobile : dZoom;
+  var mX = currentTheme.heroBgPosXMobile !== undefined ? currentTheme.heroBgPosXMobile : dX;
+  var mY = currentTheme.heroBgPosYMobile !== undefined ? currentTheme.heroBgPosYMobile : dY;
+
+  function rule(zoom, x, y){
+    var layers = [], sizes = [], positions = [];
+    if(overlayLayer){ layers.push(overlayLayer); sizes.push('cover'); positions.push('center'); }
+    if(hasImg){ layers.push('url("'+currentTheme.heroBg+'")'); sizes.push(zoom+'%'); positions.push(x+'% '+y+'%'); }
+    return '.hero{background-image:'+layers.join(', ')+';background-size:'+sizes.join(', ')+';background-position:'+positions.join(', ')+';}';
+  }
+  return rule(dZoom, dX, dY) + '@media (max-width:640px){' + rule(mZoom, mX, mY) + '}';
+}
+
 function updateHeroBgLive(){
   try{
-    var hero = fd().querySelector('.hero');
+    var doc2 = fd();
+    var hero = doc2.querySelector('.hero');
     if(!hero) return;
-    var oldOverlay = fd().getElementById('vk-hero-overlay');
+    // clear stale inline styles / old overlay <div> from earlier
+    // implementations — an inline style always wins over the <style>
+    // tag below, which would silently break the @media override.
+    hero.style.backgroundImage = '';
+    hero.style.backgroundSize = '';
+    hero.style.backgroundPosition = '';
+    var oldOverlay = doc2.getElementById('vk-hero-overlay');
     if(oldOverlay) oldOverlay.remove();
 
-    var overlayOn = document.getElementById('h-bg-overlay-on').checked;
-    var overlayColor = document.getElementById('h-bg-overlay-color').value;
-    var overlayOpacity = document.getElementById('h-bg-overlay-opacity').value;
-    var zoom = document.getElementById('h-bg-zoom').value || 100;
-    var x = document.getElementById('h-bg-posx').value || 50;
-    var y = document.getElementById('h-bg-posy').value || 50;
-
-    var layers = [], sizes = [], positions = [];
-    if(overlayOn){
-      var rgba = hexToRgba(overlayColor, overlayOpacity/100);
-      layers.push('linear-gradient('+rgba+','+rgba+')');
-      sizes.push('cover');
-      positions.push('center');
-    }
-    if(currentTheme.heroBg){
-      layers.push('url("'+currentTheme.heroBg+'")');
-      sizes.push(zoom+'%');
-      positions.push(x+'% '+y+'%');
-    }
-    if(layers.length){
-      hero.style.backgroundImage = layers.join(', ');
-      hero.style.backgroundSize = sizes.join(', ');
-      hero.style.backgroundPosition = positions.join(', ');
-    } else {
-      hero.style.backgroundImage = '';
+    var css = buildHeroBgCssEditor();
+    var styleTag = doc2.getElementById('vk-hero-bg-style');
+    if(css){
+      if(!styleTag){
+        styleTag = doc2.createElement('style');
+        styleTag.id = 'vk-hero-bg-style';
+        doc2.head.appendChild(styleTag);
+      }
+      styleTag.textContent = css;
+    } else if(styleTag){
+      styleTag.remove();
     }
   }catch(e){}
 }
@@ -1116,9 +1183,12 @@ function collectTheme(){
     heroSubAr:   document.getElementById('h-sub-ar').value,
     heroCtaAr:   document.getElementById('h-cta-ar').value,
     heroBg:      currentTheme.heroBg || '',
-    heroBgZoom:  parseInt(document.getElementById('h-bg-zoom').value)||100,
-    heroBgPosX:  parseInt(document.getElementById('h-bg-posx').value)||50,
-    heroBgPosY:  parseInt(document.getElementById('h-bg-posy').value)||50,
+    heroBgZoom:  currentTheme.heroBgZoom || 100,
+    heroBgPosX:  currentTheme.heroBgPosX !== undefined ? currentTheme.heroBgPosX : 50,
+    heroBgPosY:  currentTheme.heroBgPosY !== undefined ? currentTheme.heroBgPosY : 50,
+    heroBgZoomMobile: currentTheme.heroBgZoomMobile !== undefined ? currentTheme.heroBgZoomMobile : (currentTheme.heroBgZoom || 100),
+    heroBgPosXMobile: currentTheme.heroBgPosXMobile !== undefined ? currentTheme.heroBgPosXMobile : (currentTheme.heroBgPosX !== undefined ? currentTheme.heroBgPosX : 50),
+    heroBgPosYMobile: currentTheme.heroBgPosYMobile !== undefined ? currentTheme.heroBgPosYMobile : (currentTheme.heroBgPosY !== undefined ? currentTheme.heroBgPosY : 50),
     heroOverlayOn:      document.getElementById('h-bg-overlay-on').checked,
     heroOverlayColor:   document.getElementById('h-bg-overlay-color').value,
     heroOverlayOpacity: parseInt(document.getElementById('h-bg-overlay-opacity').value)||40,
@@ -1173,9 +1243,13 @@ function loadSavedTheme(){
   if(saved.bannerOn)    { document.getElementById('banner-section').style.display='block'; updateBanner(); }
   if(saved.featuredOn)  { document.getElementById('featured-section').style.display='block'; updateFeatured(); }
   if(saved.promoOn)     { document.getElementById('promo-section').style.display='block'; updatePromo(); }
-  if(saved.heroBgZoom)  { document.getElementById('h-bg-zoom').value=saved.heroBgZoom; document.getElementById('h-bg-zoom-val').textContent=saved.heroBgZoom+'%'; }
-  if(saved.heroBgPosX!==undefined){ document.getElementById('h-bg-posx').value=saved.heroBgPosX; document.getElementById('h-bg-posx-val').textContent=saved.heroBgPosX+'%'; }
-  if(saved.heroBgPosY!==undefined){ document.getElementById('h-bg-posy').value=saved.heroBgPosY; document.getElementById('h-bg-posy-val').textContent=saved.heroBgPosY+'%'; }
+  if(saved.heroBgZoom)  currentTheme.heroBgZoom = saved.heroBgZoom;
+  if(saved.heroBgPosX!==undefined) currentTheme.heroBgPosX = saved.heroBgPosX;
+  if(saved.heroBgPosY!==undefined) currentTheme.heroBgPosY = saved.heroBgPosY;
+  if(saved.heroBgZoomMobile!==undefined) currentTheme.heroBgZoomMobile = saved.heroBgZoomMobile;
+  if(saved.heroBgPosXMobile!==undefined) currentTheme.heroBgPosXMobile = saved.heroBgPosXMobile;
+  if(saved.heroBgPosYMobile!==undefined) currentTheme.heroBgPosYMobile = saved.heroBgPosYMobile;
+  refreshHeroBgControlsForDevice();
   if(saved.heroOverlayOn!==undefined){
     document.getElementById('h-bg-overlay-on').checked = saved.heroOverlayOn;
   }
