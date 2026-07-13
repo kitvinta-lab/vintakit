@@ -16,6 +16,8 @@ var auth = firebase.auth();
 var pendingImgs = []; // base64 strings for new product
 var editImgs = [];    // base64 strings for edit
 var editingPid = null;
+var pendingSuggestIds = []; // manually-picked "you might like" ids for the add-product form
+var editSuggestIds = [];    // same, for the edit modal
 
 // Reads a file, resizes it (max width 900px) and compresses it to JPEG
 // so uploaded photos stay small enough to store safely in Firestore.
@@ -43,18 +45,18 @@ function fileToBase64(file){
 }
 
 function handleImgUpload(input){
-  var files = Array.from(input.files).slice(0,3);
+  var files = Array.from(input.files).slice(0,4);
   Promise.all(files.map(fileToBase64)).then(function(results){
-    pendingImgs = results.slice(0,3);
+    pendingImgs = results.slice(0,4);
     renderPreviews('img-previews', pendingImgs, function(i){ pendingImgs.splice(i,1); renderPreviews('img-previews', pendingImgs, arguments.callee); });
   });
   input.value = '';
 }
 
 function handleEditImgUpload(input){
-  var files = Array.from(input.files).slice(0, 3 - editImgs.length);
+  var files = Array.from(input.files).slice(0, 4 - editImgs.length);
   Promise.all(files.map(fileToBase64)).then(function(results){
-    editImgs = editImgs.concat(results).slice(0,3);
+    editImgs = editImgs.concat(results).slice(0,4);
     renderPreviews('edit-previews', editImgs, function(i){ editImgs.splice(i,1); renderPreviews('edit-previews', editImgs, arguments.callee); });
   });
   input.value = '';
@@ -91,9 +93,9 @@ document.addEventListener('DOMContentLoaded', function(){
   area.addEventListener('dragleave', function(){ area.classList.remove('drag-over'); });
   area.addEventListener('drop', function(e){
     e.preventDefault(); area.classList.remove('drag-over');
-    var files = Array.from(e.dataTransfer.files).filter(function(f){ return f.type.startsWith('image/'); }).slice(0,3);
+    var files = Array.from(e.dataTransfer.files).filter(function(f){ return f.type.startsWith('image/'); }).slice(0,4);
     Promise.all(files.map(fileToBase64)).then(function(results){
-      pendingImgs = results.slice(0,3);
+      pendingImgs = results.slice(0,4);
       renderPreviews('img-previews', pendingImgs, null);
     });
   });
@@ -138,10 +140,10 @@ var DEFAULT_PRODUCTS = [
 // Used only once, to seed Firestore the very first time the store runs
 // (if the "categories" collection is still empty).
 var DEFAULT_CATEGORIES = [
-  {id:'africa',  ar:'إفريقيا', en:'Africa',  order:0},
-  {id:'europe',  ar:'أوروبا',  en:'Europe',  order:1},
-  {id:'america', ar:'أمريكا',  en:'America', order:2},
-  {id:'asia',    ar:'آسيا',    en:'Asia',    order:3}
+  {id:'africa',  ar:'إفريقيا', en:'Africa',  order:0, icon:'🌍'},
+  {id:'europe',  ar:'أوروبا',  en:'Europe',  order:1, icon:'🏆'},
+  {id:'america', ar:'أمريكا',  en:'America', order:2, icon:'🌎'},
+  {id:'asia',    ar:'آسيا',    en:'Asia',    order:3, icon:'🌏'}
 ];
 
 // ─── I18N ───
@@ -298,6 +300,42 @@ function setFilter(f, btn){
   renderGrid();
 }
 
+// ─── MANUAL "YOU MIGHT LIKE" PICKER ───
+// Lets the admin hand-pick up to 4 products to feature on a shirt's
+// product page instead of the automatic same-category suggestions.
+// Used by both the add-product form (#f-suggest-picker) and the edit
+// modal (#e-suggest-picker).
+function renderSuggestPicker(containerId, selectedIds, excludeId){
+  var el = document.getElementById(containerId);
+  if(!el) return;
+  var list = products.filter(function(p){ return p.id !== excludeId; });
+  if(!list.length){
+    el.innerHTML = '<div style="color:var(--text-light);font-size:12px;padding:8px">لا توجد قمصان أخرى بعد</div>';
+    return;
+  }
+  el.innerHTML = list.map(function(p){
+    var name = lang==='ar' ? p.nar : p.nen;
+    var checked = selectedIds.indexOf(p.id) !== -1 ? 'checked' : '';
+    return '<label class="sugg-pick-row">'
+      + '<input type="checkbox" value="'+p.id+'" '+checked+' onchange="onSuggestPick(\''+containerId+'\',this)">'
+      + '<span class="sugg-pick-flag">'+p.flag+'</span>'
+      + '<span class="sugg-pick-name">'+name+'</span>'
+      + '</label>';
+  }).join('');
+}
+
+function onSuggestPick(containerId, checkbox){
+  var checkedBoxes = document.querySelectorAll('#'+containerId+' input[type=checkbox]:checked');
+  if(checkedBoxes.length > 4){
+    checkbox.checked = false;
+    toast(lang==='ar' ? 'الحد الأقصى 4 قمصان مقترحة' : 'Maximum 4 suggested products');
+    return;
+  }
+  var ids = Array.from(checkedBoxes).map(function(cb){ return cb.value; });
+  if(containerId === 'f-suggest-picker') pendingSuggestIds = ids;
+  else editSuggestIds = ids;
+}
+
 // ─── CATEGORIES (dynamic filters + region options) ───
 // Categories are fully editable at runtime (add/rename/reorder/delete)
 // via the visual editor, and live-synced through Firestore.
@@ -311,14 +349,16 @@ function renderFilters(){
   var allBtn = '<button class="filter-btn'+(currentFilter==='all'?' active':'')+'" onclick="setFilter(\'all\',this)" id="f-all">'+T('fAll')+'</button>';
   var catBtns = sortedCategories().map(function(c){
     var label = lang==='ar' ? c.ar : c.en;
-    return '<button class="filter-btn'+(currentFilter===c.id?' active':'')+'" onclick="setFilter(\''+c.id+'\',this)" id="f-'+c.id+'">'+label+'</button>';
+    var icon = c.icon ? c.icon+' ' : '';
+    return '<button class="filter-btn'+(currentFilter===c.id?' active':'')+'" onclick="setFilter(\''+c.id+'\',this)" id="f-'+c.id+'">'+icon+label+'</button>';
   }).join('');
   wrap.innerHTML = allBtn + catBtns;
 }
 
 function renderRegionOptions(){
   var opts = sortedCategories().map(function(c){
-    return '<option value="'+c.id+'">'+c.ar+' / '+c.en+'</option>';
+    var icon = c.icon ? c.icon+' ' : '';
+    return '<option value="'+c.id+'">'+icon+c.ar+' / '+c.en+'</option>';
   }).join('');
   ['f-region','e-region'].forEach(function(id){
     var el = document.getElementById(id);
@@ -411,9 +451,17 @@ function renderProductPage(pid){
   // init magnifier
   setTimeout(initMagnifier, 80);
 
-  // suggestions: same region first, exclude current
-  var sugg = products.filter(function(x){ return x.id!==pid && x.region===p.region; });
-  if(sugg.length < 4) sugg = sugg.concat(products.filter(function(x){ return x.id!==pid && x.region!==p.region; }));
+  // suggestions: manually-picked by the admin take priority; otherwise
+  // fall back to same-category first, then anything else
+  var sugg;
+  if(p.suggestedIds && p.suggestedIds.length){
+    sugg = p.suggestedIds
+      .map(function(id){ return products.find(function(x){ return x.id===id; }); })
+      .filter(function(x){ return x && x.id!==pid; });
+  } else {
+    sugg = products.filter(function(x){ return x.id!==pid && x.region===p.region; });
+    if(sugg.length < 4) sugg = sugg.concat(products.filter(function(x){ return x.id!==pid && x.region!==p.region; }));
+  }
   sugg = sugg.slice(0,4);
   var sg = document.getElementById('sugg-grid');
   sg.innerHTML = sugg.map(function(s){
@@ -567,6 +615,7 @@ function showAdminPanel(){
   document.getElementById('abt-ar').value = aboutTexts.ar || '';
   document.getElementById('abt-en').value = aboutTexts.en || '';
   renderRegionOptions();
+  renderSuggestPicker('f-suggest-picker', pendingSuggestIds, null);
   // populate theme inputs from saved theme
   var saved = JSON.parse(localStorage.getItem('vk-theme') || 'null') || DEFAULT_THEME;
   populateThemeInputs(saved);
@@ -646,11 +695,13 @@ function addProduct(){
   if(!nar||!nen||!car||!cen||!price){ toast(T('tFill')); return; }
   var seed = Date.now();
   var imgs = pendingImgs.length ? pendingImgs.slice() : ['https://picsum.photos/seed/'+seed+'a/600/450'];
-  var newProduct = {id:'p'+seed,nar:nar,nen:nen,car:car,cen:cen,flag:flag,price:price,region:region,imgs:imgs,sizes:['S','M','L','XL','XXL'],soldOut:false};
+  var newProduct = {id:'p'+seed,nar:nar,nen:nen,car:car,cen:cen,flag:flag,price:price,region:region,imgs:imgs,sizes:['S','M','L','XL','XXL'],soldOut:false,suggestedIds:pendingSuggestIds.slice()};
   db.collection('products').doc(newProduct.id).set(newProduct).then(function(){
     ['f-nar','f-nen','f-car','f-cen','f-flag','f-price'].forEach(function(id){ document.getElementById(id).value=''; });
     pendingImgs = [];
+    pendingSuggestIds = [];
     document.getElementById('img-previews').innerHTML = '';
+    renderSuggestPicker('f-suggest-picker', pendingSuggestIds, null);
     toast(T('tAdded'));
   }).catch(function(err){ toast((lang==='ar'?'خطأ: ':'Error: ')+err.message); });
 }
@@ -669,12 +720,14 @@ function openEdit(pid){
   document.getElementById('e-price').value = p.price;
   document.getElementById('e-region').value = p.region;
   renderPreviews('edit-previews', editImgs, null);
+  editSuggestIds = p.suggestedIds ? p.suggestedIds.slice() : [];
+  renderSuggestPicker('e-suggest-picker', editSuggestIds, pid);
   document.getElementById('edit-modal-overlay').classList.add('open');
 }
 
 function closeEdit(){
   document.getElementById('edit-modal-overlay').classList.remove('open');
-  editingPid = null; editImgs = [];
+  editingPid = null; editImgs = []; editSuggestIds = [];
 }
 
 function saveEdit(){
@@ -687,7 +740,8 @@ function saveEdit(){
     cen: document.getElementById('e-cen').value.trim() || p.cen,
     flag: document.getElementById('e-flag').value.trim() || p.flag,
     price: parseInt(document.getElementById('e-price').value) || p.price,
-    region: document.getElementById('e-region').value
+    region: document.getElementById('e-region').value,
+    suggestedIds: editSuggestIds.slice()
   };
   if(editImgs.length) updated.imgs = editImgs.slice();
   var savingEditPid = editingPid;

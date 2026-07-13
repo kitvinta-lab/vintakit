@@ -177,9 +177,13 @@
           <select id="f-region" class="full"></select>
           <!-- options rendered dynamically by renderRegionOptions() in script.js -->
           <div class="full img-upload-area" id="upload-area">
-            <div class="upload-label" id="upload-label">📸 اضغط أو اسحب لرفع الصور (حتى 3 صور)</div>
+            <div class="upload-label" id="upload-label">📸 اضغط أو اسحب لرفع الصور (حتى 4 صور)</div>
             <input type="file" id="f-imgs" accept="image/*" multiple style="display:none" onchange="handleImgUpload(this)">
             <div class="img-previews" id="img-previews"></div>
+          </div>
+          <div class="full">
+            <div class="pick-label" id="f-suggest-lbl">قمصان مقترحة يدوياً فـ"قد تعجبك" (اختياري، حتى 4 — بلا اختيار غيقترح تلقائياً)</div>
+            <div class="suggest-picker" id="f-suggest-picker"></div>
           </div>
           <button class="adm-btn-blue" id="adm-add-btn" onclick="addProduct()">+ إضافة القميص</button>
         </div>
@@ -212,9 +216,13 @@
       <select id="e-region" class="full"></select>
       <!-- options rendered dynamically by renderRegionOptions() in script.js -->
       <div class="edit-img-area full" onclick="document.getElementById('e-imgs').click()">
-        <div style="color:var(--text-mid);font-size:13px;font-weight:600" id="edit-upload-lbl">📸 اضغط لتغيير الصور (حتى 3)</div>
+        <div style="color:var(--text-mid);font-size:13px;font-weight:600" id="edit-upload-lbl">📸 اضغط لتغيير الصور (حتى 4)</div>
         <input type="file" id="e-imgs" accept="image/*" multiple style="display:none" onchange="handleEditImgUpload(this)">
         <div class="img-previews" id="edit-previews"></div>
+      </div>
+      <div class="full">
+        <div class="pick-label" id="e-suggest-lbl">قمصان مقترحة يدوياً فـ"قد تعجبك" (اختياري، حتى 4)</div>
+        <div class="suggest-picker" id="e-suggest-picker"></div>
       </div>
       <div class="edit-actions">
         <button class="btn-save-edit" onclick="saveEdit()" id="save-edit-btn">حفظ التعديلات</button>

@@ -557,6 +557,10 @@ html,body{height:100%;overflow:hidden;font-family:'Cairo',sans-serif}
 
       <div class="sec-lbl">إضافة تصنيف جديد</div>
       <div class="field">
+        <label class="field-label">الأيقونة (إيموجي، اختياري)</label>
+        <input type="text" id="cat-new-icon" placeholder="🌏" maxlength="4">
+      </div>
+      <div class="field">
         <label class="field-label">الاسم (عربي)</label>
         <input type="text" id="cat-new-ar" placeholder="مثال: أوقيانوسيا">
       </div>
@@ -1311,6 +1315,7 @@ function renderCategoriesEditor(){
   wrap.innerHTML = editorCategories.map(function(c, i){
     return '<div class="banner-card" style="padding:10px;margin-bottom:8px">'
       + '<div class="field-row" style="margin-bottom:8px">'
+        + '<div class="field" style="max-width:70px"><input type="text" value="'+escapeAttr(c.icon||'')+'" placeholder="🌍" maxlength="4" style="text-align:center" onchange="renameCategory(\''+c.id+'\',\'icon\',this.value)"></div>'
         + '<div class="field"><input type="text" value="'+escapeAttr(c.ar)+'" placeholder="عربي" onchange="renameCategory(\''+c.id+'\',\'ar\',this.value)"></div>'
         + '<div class="field"><input type="text" value="'+escapeAttr(c.en)+'" placeholder="English" onchange="renameCategory(\''+c.id+'\',\'en\',this.value)"></div>'
       + '</div>'
@@ -1324,7 +1329,7 @@ function renderCategoriesEditor(){
 
 function renameCategory(id, field, val){
   val = (val||'').trim();
-  if(!val){ toast('الاسم لا يمكن أن يكون فارغاً'); renderCategoriesEditor(); return; }
+  if(!val && field!=='icon'){ toast('الاسم لا يمكن أن يكون فارغاً'); renderCategoriesEditor(); return; }
   var data = {}; data[field] = val;
   db.collection('categories').doc(id).update(data)
     .then(function(){ toast('تم التحديث ✓'); })
@@ -1352,13 +1357,15 @@ function deleteCategoryFromEditor(id){
 }
 
 function addCategoryFromEditor(){
+  var icon = document.getElementById('cat-new-icon').value.trim();
   var ar = document.getElementById('cat-new-ar').value.trim();
   var en = document.getElementById('cat-new-en').value.trim();
   if(!ar || !en){ toast('الرجاء ملء الاسمين'); return; }
   var id = 'cat' + Date.now();
   var maxOrder = editorCategories.reduce(function(m,c){ return Math.max(m, c.order||0); }, -1);
-  db.collection('categories').doc(id).set({id:id, ar:ar, en:en, order:maxOrder+1})
+  db.collection('categories').doc(id).set({id:id, ar:ar, en:en, icon:icon, order:maxOrder+1})
     .then(function(){
+      document.getElementById('cat-new-icon').value = '';
       document.getElementById('cat-new-ar').value = '';
       document.getElementById('cat-new-en').value = '';
       toast('تمت الإضافة ✓');
