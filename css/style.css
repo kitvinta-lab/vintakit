@@ -683,3 +683,27 @@ button { cursor: pointer; font-family: 'Cairo', sans-serif; }
   font-size: 13px; cursor: pointer; transition: all .2s;
 }
 .theme-reset-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* ─── FOOTER TAGLINE ─── */
+.footer-tagline {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--gold);
+  margin: 8px auto 4px;
+  max-width: 480px;
+  line-height: 1.6;
+  opacity: 0.85;
+  position: relative;
+  padding: 0 20px;
+}
+.footer-tagline::before,
+.footer-tagline::after {
+  content: '"';
+  font-size: 20px;
+  color: var(--gold);
+  opacity: 0.5;
+  font-style: normal;
+  vertical-align: -3px;
+}
+.footer-tagline::before { margin-inline-end: 4px; }
+.footer-tagline::after  { margin-inline-start: 4px; }
