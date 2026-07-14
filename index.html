@@ -7,6 +7,44 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;900&family=Oswald:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+
+<!--
+  ⚡ FLASH PREVENTION — runs synchronously before first paint.
+  1. Applies saved CSS variables instantly from localStorage.
+  2. Hides the page with opacity:0 for max 300ms so any remaining
+     flicker (e.g. fonts) is invisible. The vk-no-flash class is
+     removed by script.js after applyThemeInstantly() runs.
+-->
+<style>.vk-no-flash{opacity:0!important;transition:none!important}</style>
+<script>
+(function(){
+  try{
+    // ── 1. Apply colors immediately ──
+    var t = JSON.parse(localStorage.getItem('vk-theme')||'null');
+    if(t){
+      var r = document.documentElement.style;
+      function adj(h,a){h=h.replace('#','');var rv=Math.min(255,parseInt(h.slice(0,2),16)+a),gv=Math.min(255,parseInt(h.slice(2,4),16)+a),bv=Math.min(255,parseInt(h.slice(4,6),16)+a);return'#'+[rv,gv,bv].map(function(v){return('0'+v.toString(16)).slice(-2)}).join('');}
+      if(t.royal){r.setProperty('--royal',t.royal);r.setProperty('--royal-mid',adj(t.royal,20));}
+      if(t.royalDeep) r.setProperty('--royal-deep',t.royalDeep);
+      if(t.gold){r.setProperty('--gold',t.gold);r.setProperty('--gold-light',adj(t.gold,30));}
+      if(t.green) r.setProperty('--green',t.green);
+      // card styles via injected <style> (fastest way, no querySelectorAll needed)
+      var s=document.createElement('style');s.id='vk-live-theme';
+      s.textContent=
+        '.card{border-radius:'+(t.cardRadius!==undefined?t.cardRadius:14)+'px!important}'+
+        '.card-name{font-size:'+(t.cardNameFs!==undefined?t.cardNameFs:13)+'px!important}'+
+        '.card-price{font-size:'+(t.cardPriceFs!==undefined?t.cardPriceFs:17)+'px!important}';
+      document.head.appendChild(s);
+    }
+    // ── 2. Hide page briefly to mask any remaining flicker ──
+    document.documentElement.classList.add('vk-no-flash');
+    // Safety: always reveal after 300 ms even if JS fails later
+    setTimeout(function(){document.documentElement.classList.remove('vk-no-flash');},300);
+  }catch(e){
+    document.documentElement.classList.remove('vk-no-flash');
+  }
+})();
+</script>
 </head>
 <body>
 
@@ -47,7 +85,6 @@
 
   <div class="footer">
     <div class="footer-logo">VINTAKIT</div>
-    <div class="footer-tagline" id="ft-tagline-home">حتى وإن تشابهت الأقمصة، فهي ليست كالتي نبيعها لك</div>
     <div class="footer-sub" id="ft-home">© 2024 — جميع الحقوق محفوظة</div>
   </div>
 </div>
@@ -85,7 +122,6 @@
 
   <div class="footer">
     <div class="footer-logo">VINTAKIT</div>
-    <div class="footer-tagline">حتى وإن تشابهت الأقمصة، فهي ليست كالتي نبيعها لك</div>
     <div class="footer-sub" id="ft-prod">© 2024 — جميع الحقوق محفوظة</div>
   </div>
 </div>
@@ -118,7 +154,7 @@
 <div class="admin-overlay" id="admin-overlay">
   <div class="pw-screen" id="pw-screen">
     <div class="pw-box">
-      <button onclick="cancelAdminLogin()" title="إلغاء والرجوع" style="position:absolute;top:12px;left:12px;background:var(--off-white);border:1px solid var(--border);color:var(--text-mid);font-size:13px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:4px">✕ إلغاء</button>
+      <button onclick="cancelAdminLogin()" title="خروج والرجوع" style="position:absolute;top:12px;left:12px;background:var(--off-white);border:1px solid var(--border);color:var(--text-mid);font-size:13px;font-weight:600;padding:5px 12px;border-radius:20px;cursor:pointer;display:flex;align-items:center;gap:4px">✕ خروج</button>
       <div class="pw-logo">VINTAKIT</div>
       <div class="pw-sub" id="pw-sub">لوحة تحكم الأدمين</div>
       <input class="pw-inp" type="email" id="pw-email" placeholder="you@example.com"

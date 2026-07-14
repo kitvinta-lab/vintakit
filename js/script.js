@@ -165,8 +165,8 @@ var tx = {
     admClose:'✕ إغلاق', stl1:'المنتجات', stl2:'متاح', stl3:'نفد',
     admWa:'رقم الواتساب', waSave:'حفظ',
     admAbout:'تعديل صفحة "من نحن"', abtSave:'حفظ النص',
-    uploadLbl:'📸 اضغط أو اسحب لرفع الصور (حتى 4 صور)',
-    editUploadLbl:'📸 اضغط لتغيير الصور أو إضافة المزيد (حتى 4)',
+    uploadLbl:'📸 اضغط أو اسحب لرفع الصور (حتى 3 صور)',
+    editUploadLbl:'📸 اضغط لتغيير الصور أو إضافة المزيد (حتى 3)',
     editTitle:'تعديل القميص', saveEdit:'حفظ التعديلات', cancelEdit:'خروج',
     admAdd:'إضافة قميص جديد', admAddBtn:'+ إضافة القميص',
     admList:'إدارة القمصان',
@@ -194,8 +194,8 @@ var tx = {
     admClose:'✕ Close', stl1:'Products', stl2:'Available', stl3:'Sold Out',
     admWa:'WhatsApp Number', waSave:'Save',
     admAbout:'Edit "About" Page', abtSave:'Save Text',
-    uploadLbl:'📸 Click or drag to upload images (up to 4)',
-    editUploadLbl:'📸 Click to change or add more images (up to 4)',
+    uploadLbl:'📸 Click or drag to upload images (up to 3)',
+    editUploadLbl:'📸 Click to change or add more images (up to 3)',
     editTitle:'Edit Jersey', saveEdit:'Save Changes', cancelEdit:'Cancel',
     admAdd:'Add New Jersey', admAddBtn:'+ Add Jersey',
     admList:'Manage Jerseys',
@@ -1289,10 +1289,20 @@ function initApp(){
   });
 
   // Live theme listener
+  // Only re-apply if the Firestore theme differs from what's already
+  // in localStorage (= what's already on screen). This prevents the
+  // 1-2 s "flash" where the page redraws with the same values it
+  // already has, just because the network round-trip finished.
+  var _lastThemeJson = localStorage.getItem('vk-theme') || '';
   db.collection('meta').doc('theme').onSnapshot(function(doc){
-    if(doc.exists){
-      var theme = Object.assign({}, DEFAULT_THEME, doc.data());
-      localStorage.setItem('vk-theme', JSON.stringify(theme));
+    if(!doc.exists) return;
+    var theme = Object.assign({}, DEFAULT_THEME, doc.data());
+    var newJson = JSON.stringify(theme);
+    // Always keep localStorage fresh so the *next* page load is instant.
+    localStorage.setItem('vk-theme', newJson);
+    // Only repaint when something actually changed.
+    if(newJson !== _lastThemeJson){
+      _lastThemeJson = newJson;
       applyThemeToDOM(theme);
     }
   });
@@ -1320,6 +1330,11 @@ function initApp(){
     var saved = JSON.parse(localStorage.getItem('vk-theme') || 'null');
     if(saved) applyThemeToDOM(Object.assign({}, DEFAULT_THEME, saved));
   }catch(e){}
+  // Remove the no-flash class added by index.html <head> script
+  // after first paint so transitions work normally afterwards.
+  requestAnimationFrame(function(){
+    document.documentElement.classList.remove('vk-no-flash');
+  });
 })();
 
 seedIfEmpty().then(initApp);
